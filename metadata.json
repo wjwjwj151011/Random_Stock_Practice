@@ -1,0 +1,6 @@
+{
+  "name": "가상 주식 투자 게임",
+  "description": "실시간 주가 변동을 모니터링하고 가상 자산으로 주식을 매수/매도하며 자산을 증식시키는 모의 투자 시뮬레이션 게임입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
