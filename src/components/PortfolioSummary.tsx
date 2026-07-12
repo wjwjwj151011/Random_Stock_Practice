@@ -7,6 +7,9 @@ interface PortfolioSummaryProps {
   cash: number;
   initialCapital: number;
   onSelectStock: (id: string) => void;
+  savings?: number;
+  loan?: number;
+  onGoToBank?: () => void;
 }
 
 export default function PortfolioSummary({
@@ -14,7 +17,10 @@ export default function PortfolioSummary({
   portfolio,
   cash,
   initialCapital,
-  onSelectStock
+  onSelectStock,
+  savings = 0,
+  loan = 0,
+  onGoToBank
 }: PortfolioSummaryProps) {
   // Format currency
   const formatKRW = (value: number) => {
@@ -53,14 +59,16 @@ export default function PortfolioSummary({
     return stockDetails.reduce((sum, item) => sum + item.currentValuation, 0);
   }, [stockDetails]);
 
-  const totalPortfolioValue = cash + totalStockValuation;
+  const totalPortfolioValue = cash + totalStockValuation + savings - loan;
   const overallProfitLoss = totalPortfolioValue - initialCapital;
   const overallReturnPercent = (overallProfitLoss / initialCapital) * 100;
 
   // Compute allocation percentages for the visual bar
   const allocations = useMemo(() => {
-    if (totalPortfolioValue === 0) return [];
-    const cashPercent = (cash / totalPortfolioValue) * 100;
+    const grossAssets = cash + totalStockValuation + savings;
+    if (grossAssets === 0) return [];
+    const cashPercent = (cash / grossAssets) * 100;
+    const savingsPercent = (savings / grossAssets) * 100;
     const stockAllocations = stockDetails.map((item) => ({
       name: item.stock.name,
       color: item.stock.category === 'Tech' ? 'bg-indigo-500' :
@@ -68,14 +76,15 @@ export default function PortfolioSummary({
              item.stock.category === 'Energy' ? 'bg-amber-500' :
              item.stock.category === 'Consumer' ? 'bg-emerald-500' :
              'bg-fuchsia-500',
-      percent: (item.currentValuation / totalPortfolioValue) * 100
+      percent: (item.currentValuation / grossAssets) * 100
     }));
 
     return [
       { name: '예수금 (Cash)', color: 'bg-slate-300 dark:bg-slate-700', percent: cashPercent },
+      ...(savings > 0 ? [{ name: '은행 예금 (Savings)', color: 'bg-emerald-500', percent: savingsPercent }] : []),
       ...stockAllocations
     ].filter((item) => item.percent > 0.5); // filter out tiny values
-  }, [cash, stockDetails, totalPortfolioValue]);
+  }, [cash, stockDetails, savings, totalStockValuation]);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col h-full transition-all duration-200" id="portfolio-summary-card">
@@ -103,10 +112,10 @@ export default function PortfolioSummary({
           </div>
         </div>
 
-        {/* Cash vs Stock details */}
+        {/* Cash vs Stock vs Bank details */}
         <div className="grid grid-cols-2 gap-3 text-[11px] text-slate-500 dark:text-slate-450 border-b border-slate-100 dark:border-slate-800 pb-3" id="portfolio-detail-metrics">
-          <div>
-            <div className="flex justify-between mb-1">
+          <div className="space-y-1">
+            <div className="flex justify-between">
               <span>보유 예수금</span>
               <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">{formatKRW(cash)}</span>
             </div>
@@ -114,9 +123,21 @@ export default function PortfolioSummary({
               <span>주식 평가액</span>
               <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">{formatKRW(totalStockValuation)}</span>
             </div>
+            {savings > 0 && (
+              <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
+                <span>은행 예치금</span>
+                <span className="font-mono">+{formatKRW(savings)}</span>
+              </div>
+            )}
+            {loan > 0 && (
+              <div className="flex justify-between text-rose-600 dark:text-rose-400 font-semibold">
+                <span>은행 대출금</span>
+                <span className="font-mono">-{formatKRW(loan)}</span>
+              </div>
+            )}
           </div>
-          <div className="border-l border-slate-100 dark:border-slate-800 pl-3">
-            <div className="flex justify-between mb-1">
+          <div className="border-l border-slate-100 dark:border-slate-800 pl-3 space-y-1">
+            <div className="flex justify-between">
               <span>총 매수 금액</span>
               <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
                 {formatKRW(stockDetails.reduce((sum, item) => sum + item.totalCost, 0))}
@@ -199,6 +220,17 @@ export default function PortfolioSummary({
           )}
         </div>
       </div>
+
+      {/* Go to Bank Quick Action Button */}
+      {onGoToBank && (
+        <button
+          onClick={onGoToBank}
+          className="mt-4 w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          id="quick-go-to-bank-btn"
+        >
+          🏦 은행으로 이동하기 (예금 · 대출) &rarr;
+        </button>
+      )}
     </div>
   );
 }

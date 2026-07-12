@@ -41,7 +41,7 @@ export interface Transaction {
   stockId: string;
   ticker: string;
   stockName: string;
-  type: 'BUY' | 'SELL';
+  type: 'BUY' | 'SELL' | 'DEPOSIT' | 'WITHDRAW' | 'BORROW' | 'REPAY';
   shares: number;
   price: number;
   total: number;

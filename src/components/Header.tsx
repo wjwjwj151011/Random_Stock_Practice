@@ -10,6 +10,8 @@ interface HeaderProps {
   onResetGame: () => void;
   darkMode: boolean;
   onToggleDarkMode: () => void;
+  activeTab?: 'TRADING' | 'BANK';
+  setActiveTab?: (tab: 'TRADING' | 'BANK') => void;
 }
 
 export default function Header({
@@ -21,7 +23,9 @@ export default function Header({
   setSpeed,
   onResetGame,
   darkMode,
-  onToggleDarkMode
+  onToggleDarkMode,
+  activeTab,
+  setActiveTab
 }: HeaderProps) {
   // Format currency
   const formatKRW = (value: number) => {
@@ -58,6 +62,32 @@ export default function Header({
             <span className="font-mono text-sm font-bold text-slate-800 dark:text-slate-200">Day {day}</span>
           </div>
         </div>
+
+        {/* Navigation Tabs */}
+        {activeTab && setActiveTab && (
+          <div className="flex bg-slate-100/70 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-xl p-1 shrink-0" id="nav-tabs">
+            <button
+              onClick={() => setActiveTab('TRADING')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'TRADING'
+                  ? 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 shadow-xs'
+                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
+              }`}
+            >
+              📈 주식 거래
+            </button>
+            <button
+              onClick={() => setActiveTab('BANK')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'BANK'
+                  ? 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 shadow-xs'
+                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
+              }`}
+            >
+              🏦 은행 업무
+            </button>
+          </div>
+        )}
 
         {/* Goal Progress Bar */}
         <div className="flex-1 max-w-sm md:mx-6" id="goal-progress-section">

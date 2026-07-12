@@ -8,16 +8,33 @@ import TradingPanel from './components/TradingPanel';
 import PortfolioSummary from './components/PortfolioSummary';
 import NewsFeed from './components/NewsFeed';
 import TransactionHistory from './components/TransactionHistory';
+import BankPanel from './components/BankPanel';
 
 const INITIAL_CAPITAL = 10000000; // 10,000,000 KRW (1천만 원)
 const TARGET_GOAL = 30000000; // 30,000,000 KRW (3천만 원)
+const SAVINGS_INTEREST_RATE = 0.005; // 0.5% per Day
+const LOAN_INTEREST_RATE = 0.012;    // 1.2% per Day
 
 export default function App() {
   // --- Game State ---
   const [stocks, setStocks] = useState<Stock[]>(() => {
     // Attempt load from localStorage or fall back to INITIAL_STOCKS
     const saved = localStorage.getItem('stock_game_stocks');
-    return saved ? JSON.parse(saved) : INITIAL_STOCKS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Stock[];
+        // Auto-merge newly added stocks to preserve user's session but load new options
+        if (parsed.length < INITIAL_STOCKS.length) {
+          const parsedIds = new Set(parsed.map((s) => s.id));
+          const newStocks = INITIAL_STOCKS.filter((s) => !parsedIds.has(s.id));
+          return [...parsed, ...newStocks];
+        }
+        return parsed;
+      } catch (e) {
+        return INITIAL_STOCKS;
+      }
+    }
+    return INITIAL_STOCKS;
   });
 
   const [selectedStockId, setSelectedStockId] = useState<string>('titan-tech');
@@ -77,6 +94,19 @@ export default function App() {
   const [showGoalModal, setShowGoalModal] = useState<boolean>(false);
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
 
+  // --- Bank and Tab States ---
+  const [activeTab, setActiveTab] = useState<'TRADING' | 'BANK'>('TRADING');
+
+  const [savings, setSavings] = useState<number>(() => {
+    const saved = localStorage.getItem('stock_game_savings');
+    return saved ? parseFloat(saved) : 0;
+  });
+
+  const [loan, setLoan] = useState<number>(() => {
+    const saved = localStorage.getItem('stock_game_loan');
+    return saved ? parseFloat(saved) : 0;
+  });
+
   // --- Dark Mode State ---
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('stock_game_dark_mode');
@@ -91,6 +121,14 @@ export default function App() {
     }
     localStorage.setItem('stock_game_dark_mode', darkMode.toString());
   }, [darkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('stock_game_savings', savings.toString());
+  }, [savings]);
+
+  useEffect(() => {
+    localStorage.setItem('stock_game_loan', loan.toString());
+  }, [loan]);
 
   // --- Derived Calculations ---
   const currentStock = useMemo(() => {
@@ -108,7 +146,7 @@ export default function App() {
     }, 0);
   }, [portfolio, stocks]);
 
-  const totalAssets = cash + totalStockValuation;
+  const totalAssets = cash + totalStockValuation + savings - loan;
 
   // --- Save to LocalStorage ---
   useEffect(() => {
@@ -165,6 +203,17 @@ export default function App() {
 
     const handleTick = () => {
       setDay((prevDay) => prevDay + 1);
+
+      // Accrue savings and loan interest
+      setSavings((prevSavings) => {
+        if (prevSavings <= 0) return 0;
+        return prevSavings + Math.round(prevSavings * SAVINGS_INTEREST_RATE);
+      });
+
+      setLoan((prevLoan) => {
+        if (prevLoan <= 0) return 0;
+        return prevLoan + Math.round(prevLoan * LOAN_INTEREST_RATE);
+      });
 
       // Roll for news event (25% chance of news on normal speed, 15% on fast speed to avoid spam)
       const newsRollChance = speed === 'FAST' ? 0.15 : 0.25;
@@ -278,6 +327,9 @@ export default function App() {
     setSelectedStockId('titan-tech');
     setCash(INITIAL_CAPITAL);
     setPortfolio([]);
+    setSavings(0);
+    setLoan(0);
+    setActiveTab('TRADING');
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     setNews([
@@ -300,6 +352,94 @@ export default function App() {
     localStorage.removeItem('stock_game_goal_celebrated');
   };
 
+  // --- Bank Handlers ---
+  const handleDeposit = (amount: number) => {
+    if (cash < amount) return;
+    setCash((prev) => prev - amount);
+    setSavings((prev) => prev + amount);
+
+    // Record transaction
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const newTx: Transaction = {
+      id: Math.random().toString(36).substring(2, 9),
+      timestamp: timeStr,
+      stockId: 'BANK',
+      ticker: 'BANK',
+      stockName: '은행 예치',
+      type: 'DEPOSIT',
+      shares: 0,
+      price: amount,
+      total: amount
+    };
+    setTransactions((prev) => [newTx, ...prev].slice(0, 100));
+  };
+
+  const handleWithdraw = (amount: number) => {
+    if (savings < amount) return;
+    setSavings((prev) => prev - amount);
+    setCash((prev) => prev + amount);
+
+    // Record transaction
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const newTx: Transaction = {
+      id: Math.random().toString(36).substring(2, 9),
+      timestamp: timeStr,
+      stockId: 'BANK',
+      ticker: 'BANK',
+      stockName: '예금 인출',
+      type: 'WITHDRAW',
+      shares: 0,
+      price: amount,
+      total: amount
+    };
+    setTransactions((prev) => [newTx, ...prev].slice(0, 100));
+  };
+
+  const handleBorrow = (amount: number) => {
+    setLoan((prev) => prev + amount);
+    setCash((prev) => prev + amount);
+
+    // Record transaction
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const newTx: Transaction = {
+      id: Math.random().toString(36).substring(2, 9),
+      timestamp: timeStr,
+      stockId: 'BANK',
+      ticker: 'BANK',
+      stockName: '대출 실행',
+      type: 'BORROW',
+      shares: 0,
+      price: amount,
+      total: amount
+    };
+    setTransactions((prev) => [newTx, ...prev].slice(0, 100));
+  };
+
+  const handleRepay = (amount: number) => {
+    if (cash < amount || loan < amount) return;
+    setLoan((prev) => prev - amount);
+    setCash((prev) => prev - amount);
+
+    // Record transaction
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    const newTx: Transaction = {
+      id: Math.random().toString(36).substring(2, 9),
+      timestamp: timeStr,
+      stockId: 'BANK',
+      ticker: 'BANK',
+      stockName: '대출 상환',
+      type: 'REPAY',
+      shares: 0,
+      price: amount,
+      total: amount
+    };
+    setTransactions((prev) => [newTx, ...prev].slice(0, 100));
+  };
+
   // Mark news as read
   const handleMarkAllNewsRead = () => {
     setNews((prevNews) => prevNews.map((item) => ({ ...item, read: true })));
@@ -319,59 +459,82 @@ export default function App() {
         onResetGame={() => setShowResetModal(true)}
         darkMode={darkMode}
         onToggleDarkMode={() => setDarkMode(!darkMode)}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
 
       {/* Main Layout Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8" id="main-content-area">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="bento-grid">
-          
-          {/* Left Column: Stocks (Market) & News (Feed) */}
-          <div className="lg:col-span-3 flex flex-col gap-6" id="column-market-news">
-            <StockList
-              stocks={stocks}
-              portfolio={portfolio}
-              selectedStockId={selectedStockId}
-              onSelectStock={setSelectedStockId}
-            />
-            <NewsFeed
-              news={news}
-              stocks={stocks}
-              onSelectStock={setSelectedStockId}
-              onMarkAllAsRead={handleMarkAllNewsRead}
-            />
-          </div>
-
-          {/* Center Column: Stock Chart & Trade History */}
-          <div className="lg:col-span-5 flex flex-col gap-6" id="column-charts">
-            <div className="flex-1 min-h-[360px]" id="chart-panel-container">
-              <StockChart stock={currentStock} sharesHeld={currentPortfolioItem?.shares || 0} />
-            </div>
-            <div id="tx-history-container">
-              <TransactionHistory
-                transactions={transactions}
-                onClear={() => setTransactions([])}
+        {activeTab === 'TRADING' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="bento-grid">
+            
+            {/* Left Column: Stocks (Market) & News (Feed) */}
+            <div className="lg:col-span-3 flex flex-col gap-6" id="column-market-news">
+              <StockList
+                stocks={stocks}
+                portfolio={portfolio}
+                selectedStockId={selectedStockId}
+                onSelectStock={setSelectedStockId}
+              />
+              <NewsFeed
+                news={news}
+                stocks={stocks}
+                onSelectStock={setSelectedStockId}
+                onMarkAllAsRead={handleMarkAllNewsRead}
               />
             </div>
-          </div>
 
-          {/* Right Column: Assets Portfolio & Buying Console */}
-          <div className="lg:col-span-4 flex flex-col gap-6" id="column-trading">
-            <TradingPanel
-              stock={currentStock}
+            {/* Center Column: Stock Chart & Trade History */}
+            <div className="lg:col-span-5 flex flex-col gap-6" id="column-charts">
+              <div className="flex-1 min-h-[360px]" id="chart-panel-container">
+                <StockChart stock={currentStock} sharesHeld={currentPortfolioItem?.shares || 0} />
+              </div>
+              <div id="tx-history-container">
+                <TransactionHistory
+                  transactions={transactions}
+                  onClear={() => setTransactions([])}
+                />
+              </div>
+            </div>
+
+            {/* Right Column: Assets Portfolio & Buying Console */}
+            <div className="lg:col-span-4 flex flex-col gap-6" id="column-trading">
+              <TradingPanel
+                stock={currentStock}
+                cash={cash}
+                portfolioItem={currentPortfolioItem}
+                onTrade={handleTrade}
+              />
+              <PortfolioSummary
+                stocks={stocks}
+                portfolio={portfolio}
+                cash={cash}
+                initialCapital={INITIAL_CAPITAL}
+                onSelectStock={setSelectedStockId}
+                savings={savings}
+                loan={loan}
+                onGoToBank={() => setActiveTab('BANK')}
+              />
+            </div>
+
+          </div>
+        ) : (
+          <div className="animate-fade-in" id="bank-panel-view">
+            <BankPanel
               cash={cash}
-              portfolioItem={currentPortfolioItem}
-              onTrade={handleTrade}
-            />
-            <PortfolioSummary
-              stocks={stocks}
-              portfolio={portfolio}
-              cash={cash}
-              initialCapital={INITIAL_CAPITAL}
-              onSelectStock={setSelectedStockId}
+              savings={savings}
+              loan={loan}
+              onDeposit={handleDeposit}
+              onWithdraw={handleWithdraw}
+              onBorrow={handleBorrow}
+              onRepay={handleRepay}
+              savingsRate={SAVINGS_INTEREST_RATE}
+              loanRate={LOAN_INTEREST_RATE}
+              day={day}
+              onReturnToTrading={() => setActiveTab('TRADING')}
             />
           </div>
-
-        </div>
+        )}
       </main>
 
       {/* Goal Reached Congratulatory Modal */}
