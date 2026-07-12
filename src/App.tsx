@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Stock, PortfolioItem, NewsItem, Transaction } from './types';
+import { Stock, PortfolioItem, NewsItem, Transaction, AutoSellOrder } from './types';
 import { INITIAL_STOCKS, calculateNextPrice, generateRandomNews } from './data/stocks';
 import Header from './components/Header';
 import StockChart from './components/StockChart';
@@ -85,6 +85,11 @@ export default function App() {
   const [highScore, setHighScore] = useState<number>(() => {
     const saved = localStorage.getItem('stock_game_highscore');
     return saved ? parseFloat(saved) : INITIAL_CAPITAL;
+  });
+
+  const [autoSellOrders, setAutoSellOrders] = useState<AutoSellOrder[]>(() => {
+    const saved = localStorage.getItem('stock_game_autosell');
+    return saved ? JSON.parse(saved) : [];
   });
 
   // Goal celebration state
@@ -177,6 +182,10 @@ export default function App() {
     localStorage.setItem('stock_game_highscore', highScore.toString());
   }, [highScore]);
 
+  useEffect(() => {
+    localStorage.setItem('stock_game_autosell', JSON.stringify(autoSellOrders));
+  }, [autoSellOrders]);
+
   // Track highscore and goal
   useEffect(() => {
     if (totalAssets > highScore) {
@@ -189,6 +198,96 @@ export default function App() {
       setShowGoalModal(true);
     }
   }, [totalAssets, highScore, goalCelebrated]);
+
+  // --- Auto-Sell Trigger Effect ---
+  useEffect(() => {
+    const activeOrders = autoSellOrders.filter((o) => o.isActive);
+    if (activeOrders.length === 0) return;
+
+    let cashBonus = 0;
+    let portfolioChanged = false;
+    let autoSellTriggered = false;
+    
+    let updatedPortfolio = [...portfolio];
+    const triggeredOrderIds: string[] = [];
+    const newTransactions: Transaction[] = [];
+
+    activeOrders.forEach((order) => {
+      const stock = stocks.find((s) => s.id === order.stockId);
+      if (!stock) return;
+
+      // Trigger condition: stock price reaches or exceeds the target price
+      if (stock.price >= order.targetPrice) {
+        const portfolioItem = updatedPortfolio.find((item) => item.stockId === order.stockId);
+        if (portfolioItem && portfolioItem.shares > 0) {
+          const sharesToSell = order.sellAll ? portfolioItem.shares : Math.min(order.shares, portfolioItem.shares);
+          
+          if (sharesToSell > 0) {
+            const saleValue = sharesToSell * stock.price;
+            cashBonus += saleValue;
+            
+            // Deduct shares
+            updatedPortfolio = updatedPortfolio.map((item) => {
+              if (item.stockId === order.stockId) {
+                return { ...item, shares: item.shares - sharesToSell };
+              }
+              return item;
+            }).filter((item) => item.shares > 0);
+
+            portfolioChanged = true;
+            autoSellTriggered = true;
+            triggeredOrderIds.push(order.id);
+
+            // Log Transaction
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            const newTx: Transaction = {
+              id: Math.random().toString(36).substring(2, 9),
+              timestamp: timeStr,
+              stockId: order.stockId,
+              ticker: stock.ticker,
+              stockName: `[자동매도] ${stock.name}`,
+              type: 'SELL',
+              shares: sharesToSell,
+              price: stock.price,
+              total: saleValue
+            };
+            newTransactions.push(newTx);
+
+            // Add automatic selling notification to the news feed
+            const newsItem: NewsItem = {
+              id: `autosell-${Date.now()}-${Math.random()}`,
+              title: `📢 자동 매도 체결: ${stock.name}`,
+              content: `지정가 자동 매도가 완료되었습니다. 설정 목표가 ${order.targetPrice.toLocaleString()}원 도달로 인해 보유 주식 중 ${sharesToSell.toLocaleString()}주가 주당 ${stock.price.toLocaleString()}원에 매도 처리되었습니다. (체결액: ${saleValue.toLocaleString()}원)`,
+              time: timeStr,
+              impactStockId: null,
+              impactPercent: 0,
+              type: 'positive',
+              read: false
+            };
+            setNews((prevNews) => [newsItem, ...prevNews].slice(0, 50));
+          }
+        }
+      }
+    });
+
+    if (autoSellTriggered) {
+      if (cashBonus > 0) {
+        setCash((prevCash) => prevCash + cashBonus);
+      }
+      if (portfolioChanged) {
+        setPortfolio(updatedPortfolio);
+      }
+      if (newTransactions.length > 0) {
+        setTransactions((prev) => [...newTransactions, ...prev].slice(0, 100));
+      }
+
+      // Remove triggered orders to keep lists clean and avoid repeat triggers
+      setAutoSellOrders((prevOrders) =>
+        prevOrders.filter((o) => !triggeredOrderIds.includes(o.id))
+      );
+    }
+  }, [stocks, autoSellOrders, portfolio]);
 
   // --- Core Simulation Tick Engine ---
   const tickTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -329,6 +428,7 @@ export default function App() {
     setPortfolio([]);
     setSavings(0);
     setLoan(0);
+    setAutoSellOrders([]);
     setActiveTab('TRADING');
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
@@ -350,6 +450,24 @@ export default function App() {
     setShowGoalModal(false);
     setShowResetModal(false);
     localStorage.removeItem('stock_game_goal_celebrated');
+  };
+
+  const handleAddAutoSellOrder = (targetPrice: number, shares: number, sellAll: boolean) => {
+    const newOrder: AutoSellOrder = {
+      id: Math.random().toString(36).substring(2, 9),
+      stockId: selectedStockId,
+      stockName: currentStock.name,
+      ticker: currentStock.ticker,
+      targetPrice,
+      shares,
+      sellAll,
+      isActive: true
+    };
+    setAutoSellOrders((prev) => [newOrder, ...prev]);
+  };
+
+  const handleCancelAutoSellOrder = (orderId: string) => {
+    setAutoSellOrders((prev) => prev.filter((o) => o.id !== orderId));
   };
 
   // --- Bank Handlers ---
@@ -504,6 +622,9 @@ export default function App() {
                 cash={cash}
                 portfolioItem={currentPortfolioItem}
                 onTrade={handleTrade}
+                autoSellOrders={autoSellOrders}
+                onAddAutoSellOrder={handleAddAutoSellOrder}
+                onCancelAutoSellOrder={handleCancelAutoSellOrder}
               />
               <PortfolioSummary
                 stocks={stocks}

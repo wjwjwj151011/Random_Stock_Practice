@@ -1,6 +1,6 @@
 {
-  "name": "가상 주식 투자 게임",
-  "description": "실시간 주가 변동을 모니터링하고 가상 자산으로 주식을 매수/매도하며 자산을 증식시키는 모의 투자 시뮬레이션 게임입니다.",
+  "name": "📈백만장자 만들기📉",
+  "description": "실시간 주가 변동 차트를 분석하고, 은행 예치와 대출 등의 모의 금융 시스템을 활용해 3천만 원 자산 달성 목표에 도전하는 가상 주식 투자 시뮬레이션 게임입니다.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

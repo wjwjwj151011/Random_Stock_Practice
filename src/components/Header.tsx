@@ -50,10 +50,10 @@ export default function Header({
               📊
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100 tracking-tight leading-none mb-1">
-                모의 주식 투자 챔피언십
+              <h1 className="text-lg font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none mb-1">
+                📈백만장자 만들기📉
               </h1>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">가상 주식 실시간 거래 시뮬레이터</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">가상 주식 투자 & 은행 금융 시뮬레이터</p>
             </div>
           </div>
 
@@ -65,10 +65,10 @@ export default function Header({
 
         {/* Navigation Tabs */}
         {activeTab && setActiveTab && (
-          <div className="flex bg-slate-100/70 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-xl p-1 shrink-0" id="nav-tabs">
+          <div className="flex bg-slate-100/70 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-lg p-0.5 shrink-0" id="nav-tabs">
             <button
               onClick={() => setActiveTab('TRADING')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 activeTab === 'TRADING'
                   ? 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 shadow-xs'
                   : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
@@ -78,7 +78,7 @@ export default function Header({
             </button>
             <button
               onClick={() => setActiveTab('BANK')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 activeTab === 'BANK'
                   ? 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 shadow-xs'
                   : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
@@ -109,12 +109,12 @@ export default function Header({
         </div>
 
         {/* Game speed & Reset */}
-        <div className="flex items-center justify-between md:justify-end gap-4" id="controls-area">
+        <div className="flex items-center justify-between md:justify-end gap-3" id="controls-area">
           {/* Speed Controls */}
-          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-lg p-0.5" id="speed-controls">
+          <div className="flex items-center gap-0.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-md p-0.5" id="speed-controls">
             <button
               onClick={() => setSpeed('PAUSED')}
-              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+              className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold transition-all ${
                 speed === 'PAUSED'
                   ? 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 shadow-xs'
                   : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
@@ -125,7 +125,7 @@ export default function Header({
             </button>
             <button
               onClick={() => setSpeed('NORMAL')}
-              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+              className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold transition-all ${
                 speed === 'NORMAL'
                   ? 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 shadow-xs'
                   : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
@@ -136,7 +136,7 @@ export default function Header({
             </button>
             <button
               onClick={() => setSpeed('FAST')}
-              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+              className={`px-1.5 py-0.5 rounded-sm text-[9px] font-bold transition-all ${
                 speed === 'FAST'
                   ? 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 shadow-xs'
                   : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
@@ -147,27 +147,27 @@ export default function Header({
             </button>
           </div>
 
-          <div className="flex items-center gap-3 border-l border-slate-100 dark:border-slate-800 pl-3" id="highscore-reset-row">
+          <div className="flex items-center gap-2 border-l border-slate-100 dark:border-slate-800 pl-2" id="highscore-reset-row">
             {/* Highscore display */}
             <div className="hidden sm:block text-right" id="highscore-block">
-              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold block leading-none mb-0.5">최고 자산</span>
-              <span className="font-mono text-[10px] font-bold text-slate-700 dark:text-slate-300">{formatKRW(highScore)}</span>
+              <span className="text-[8px] text-slate-400 dark:text-slate-500 font-semibold block leading-none mb-0.5">최고 자산</span>
+              <span className="font-mono text-[9px] font-bold text-slate-700 dark:text-slate-300">{formatKRW(highScore)}</span>
             </div>
 
             {/* Dark Mode Toggle */}
             <button
               onClick={onToggleDarkMode}
-              className="p-1.5 border border-slate-200 dark:border-slate-750 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100 rounded-lg transition-all flex items-center justify-center cursor-pointer"
+              className="p-1 border border-slate-200 dark:border-slate-750 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-100 rounded-md transition-all flex items-center justify-center cursor-pointer"
               title={darkMode ? '라이트 모드' : '다크 모드'}
               id="dark-mode-toggle-btn"
             >
-              {darkMode ? <Sun size={13} className="text-amber-500" /> : <Moon size={13} />}
+              {darkMode ? <Sun size={11} className="text-amber-500" /> : <Moon size={11} />}
             </button>
 
             {/* Reset button */}
             <button
               onClick={onResetGame}
-              className="px-2 py-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-slate-200 dark:border-slate-750 hover:border-rose-100 rounded-lg transition-all flex items-center gap-1"
+              className="px-1.5 py-0.5 text-[9px] font-bold text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-slate-200 dark:border-slate-750 hover:border-rose-100 rounded-md transition-all flex items-center gap-1"
               id="reset-game-btn"
             >
               🔄 초기화

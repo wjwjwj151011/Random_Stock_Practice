@@ -225,10 +225,10 @@ export default function PortfolioSummary({
       {onGoToBank && (
         <button
           onClick={onGoToBank}
-          className="mt-4 w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          className="mt-3 w-full py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold text-[10px] rounded-lg shadow-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
           id="quick-go-to-bank-btn"
         >
-          🏦 은행으로 이동하기 (예금 · 대출) &rarr;
+          🏦 은행 이동 (예금 · 대출) &rarr;
         </button>
       )}
     </div>

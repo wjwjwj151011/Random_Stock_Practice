@@ -53,3 +53,15 @@ export interface GameStats {
   highestPortfolioValue: number;
   biggestGainPercent: number;
 }
+
+export interface AutoSellOrder {
+  id: string;
+  stockId: string;
+  stockName: string;
+  ticker: string;
+  targetPrice: number;
+  shares: number;
+  sellAll: boolean; // whether to sell all held shares when triggered
+  isActive: boolean;
+}
+

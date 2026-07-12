@@ -152,10 +152,10 @@ export default function BankPanel({
         </div>
         <button
           onClick={onReturnToTrading}
-          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1"
+          className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer flex items-center gap-1"
           id="btn-return-trading"
         >
-          📈 주식 거래소로 돌아가기
+          📈 거래소 가기
         </button>
       </div>
 
@@ -250,54 +250,54 @@ export default function BankPanel({
             </div>
 
             {/* Quick Presets */}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               <button
                 onClick={() => applySavingsPreset(100000)}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 +10만
               </button>
               <button
                 onClick={() => applySavingsPreset(1000000)}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 +100만
               </button>
               <button
                 onClick={() => applySavingsPreset(5000000)}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 +500만
               </button>
               <button
                 onClick={() => applySavingsPreset('CASH_ALL')}
-                className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/30 rounded-lg text-[10px] font-bold text-emerald-600 dark:text-emerald-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900/30 rounded text-[9px] font-bold text-emerald-600 dark:text-emerald-400 transition-colors cursor-pointer"
               >
                 예수금 전액
               </button>
               <button
                 onClick={() => applySavingsPreset('SAVINGS_ALL')}
-                className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/30 rounded-lg text-[10px] font-bold text-indigo-600 dark:text-indigo-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/30 rounded text-[9px] font-bold text-indigo-600 dark:text-indigo-400 transition-colors cursor-pointer"
               >
                 예금 잔액
               </button>
             </div>
 
             {/* Submit Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 onClick={handleDepositSubmit}
                 disabled={cash <= 0}
-                className="py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer"
+                className="py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-bold text-[10px] rounded-lg transition-colors shadow-xs cursor-pointer"
               >
-                💰 은행에 예금하기
+                💰 은행 예금
               </button>
               <button
                 onClick={handleWithdrawSubmit}
                 disabled={savings <= 0}
-                className="py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:hover:bg-purple-600 text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer"
+                className="py-1.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:hover:bg-purple-600 text-white font-bold text-[10px] rounded-lg transition-colors shadow-xs cursor-pointer"
               >
-                📤 예금액 출금하기
+                📤 예금 출금
               </button>
             </div>
           </div>
@@ -332,54 +332,54 @@ export default function BankPanel({
             </div>
 
             {/* Quick Presets */}
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               <button
                 onClick={() => applyLoanPreset(500000)}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 +50만
               </button>
               <button
                 onClick={() => applyLoanPreset(2000000)}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 +200만
               </button>
               <button
                 onClick={() => applyLoanPreset(5000000)}
-                className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-850 border border-slate-100 dark:border-slate-800 rounded text-[9px] font-bold text-slate-600 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 +500만
               </button>
               <button
                 onClick={() => applyLoanPreset('MAX_BORROW')}
-                className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 border border-rose-100 dark:border-rose-900/30 rounded-lg text-[10px] font-bold text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 border border-rose-100 dark:border-rose-900/30 rounded text-[9px] font-bold text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
               >
-                최대 한도 대출
+                최대 대출
               </button>
               <button
                 onClick={() => applyLoanPreset('REPAY_ALL')}
-                className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 border border-amber-100 dark:border-amber-900/30 rounded-lg text-[10px] font-bold text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
+                className="px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 border border-amber-100 dark:border-amber-900/30 rounded text-[9px] font-bold text-amber-600 dark:text-amber-400 transition-colors cursor-pointer"
               >
-                전액 상환하기
+                전액 상환
               </button>
             </div>
 
             {/* Submit Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 onClick={handleBorrowSubmit}
                 disabled={loan >= MAX_LOAN_LIMIT}
-                className="py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:hover:bg-rose-600 text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer"
+                className="py-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:hover:bg-rose-600 text-white font-bold text-[10px] rounded-lg transition-colors shadow-xs cursor-pointer"
               >
-                💸 대출 실행하기
+                💸 대출 실행
               </button>
               <button
                 onClick={handleRepaySubmit}
                 disabled={loan <= 0 || cash <= 0}
-                className="py-3 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer"
+                className="py-1.5 bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-700 text-white font-bold text-[10px] rounded-lg transition-colors shadow-xs cursor-pointer"
               >
-                ↩️ 대출 상환하기
+                ↩️ 대출 상환
               </button>
             </div>
           </div>
