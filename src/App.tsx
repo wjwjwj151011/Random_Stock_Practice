@@ -77,6 +77,21 @@ export default function App() {
   const [showGoalModal, setShowGoalModal] = useState<boolean>(false);
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
 
+  // --- Dark Mode State ---
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('stock_game_dark_mode');
+    return saved ? saved === 'true' : false;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('stock_game_dark_mode', darkMode.toString());
+  }, [darkMode]);
+
   // --- Derived Calculations ---
   const currentStock = useMemo(() => {
     return stocks.find((s) => s.id === selectedStockId) || stocks[0];
@@ -291,7 +306,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-800 flex flex-col font-sans" id="app-root">
+    <div className="min-h-screen bg-slate-50/50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200" id="app-root">
       
       {/* Header */}
       <Header
@@ -302,6 +317,8 @@ export default function App() {
         speed={speed}
         setSpeed={setSpeed}
         onResetGame={() => setShowResetModal(true)}
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode(!darkMode)}
       />
 
       {/* Main Layout Area */}
@@ -359,8 +376,8 @@ export default function App() {
 
       {/* Goal Reached Congratulatory Modal */}
       {showGoalModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" id="achievement-modal-overlay">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center relative overflow-hidden" id="achievement-modal-box">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" id="achievement-modal-overlay">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden" id="achievement-modal-box">
             
             {/* Celebration Sparkles */}
             <div className="absolute -top-10 -left-10 w-40 h-40 bg-rose-500/10 rounded-full blur-2xl" />
@@ -368,39 +385,39 @@ export default function App() {
 
             <span className="text-5xl block mb-4" id="celebration-emoji">🏆</span>
             
-            <h3 className="text-2xl font-bold text-slate-800 tracking-tight mb-2" id="celebration-title">
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight mb-2" id="celebration-title">
               축하합니다! 3,000만 원 돌파!
             </h3>
             
-            <p className="text-sm text-slate-500 leading-relaxed mb-6" id="celebration-message">
-              가상 자금 {INITIAL_CAPITAL.toLocaleString()}원으로 투자를 시작해 드디어 꿈의 자산 <strong className="text-rose-600 font-extrabold">{TARGET_GOAL.toLocaleString()}원(3천만 원)</strong>을 성공적으로 초과 달성했습니다! 
+            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6" id="celebration-message">
+              가상 자금 {INITIAL_CAPITAL.toLocaleString()}원으로 투자를 시작해 드디어 꿈의 자산 <strong className="text-rose-600 dark:text-rose-400 font-extrabold">{TARGET_GOAL.toLocaleString()}원(3천만 원)</strong>을 성공적으로 초과 달성했습니다! 
               탁월한 주가 분석 능력과 탁월한 결단력을 증명하셨습니다.
             </p>
 
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6 flex justify-around text-center" id="celebration-stats">
+            <div className="bg-slate-50 dark:bg-slate-950/60 rounded-2xl p-4 border border-slate-100 dark:border-slate-850 mb-6 flex justify-around text-center" id="celebration-stats">
               <div>
-                <span className="text-[10px] text-slate-400 font-bold block mb-0.5">최종 도달 자산</span>
-                <span className="font-mono text-sm font-bold text-slate-800">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mb-0.5">최종 도달 자산</span>
+                <span className="font-mono text-sm font-bold text-slate-800 dark:text-slate-200">
                   {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(totalAssets)}
                 </span>
               </div>
-              <div className="border-l border-slate-200" />
+              <div className="border-l border-slate-200 dark:border-slate-800" />
               <div>
-                <span className="text-[10px] text-slate-400 font-bold block mb-0.5">소요 기간</span>
-                <span className="font-mono text-sm font-bold text-slate-800">Day {day}</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block mb-0.5">소요 기간</span>
+                <span className="font-mono text-sm font-bold text-slate-800 dark:text-slate-200">Day {day}</span>
               </div>
             </div>
 
             <div className="flex gap-3" id="celebration-buttons">
               <button
                 onClick={() => setShowGoalModal(false)}
-                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors shadow-sm"
+                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-xl text-xs font-bold transition-colors shadow-sm"
               >
                 계속 투자하기
               </button>
               <button
                 onClick={handleResetGame}
-                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold transition-colors"
+                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/40 rounded-xl text-xs font-bold transition-colors"
               >
                 새로운 도전 시작
               </button>
@@ -411,36 +428,36 @@ export default function App() {
 
       {/* Game Reset Confirmation Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" id="reset-modal-overlay">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center relative overflow-hidden" id="reset-modal-box">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in" id="reset-modal-overlay">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden" id="reset-modal-box">
             
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl" />
             
             <span className="text-5xl block mb-4" id="reset-emoji">⚠️</span>
             
-            <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mb-2" id="reset-title">
+            <h3 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight mb-2" id="reset-title">
               게임을 초기화하시겠습니까?
             </h3>
             
-            <p className="text-xs text-slate-500 leading-relaxed mb-6" id="reset-message">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-6" id="reset-message">
               현재까지 진행된 모의 투자 정보가 완전히 초기화되며 다시 복구할 수 없습니다.<br />
               처음부터 신규 투자 시즌을 시작하시겠습니까?
             </p>
 
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6 text-left space-y-2.5 text-xs" id="reset-current-stats">
+            <div className="bg-slate-50 dark:bg-slate-950/60 rounded-2xl p-4 border border-slate-100 dark:border-slate-850 mb-6 text-left space-y-2.5 text-xs" id="reset-current-stats">
               <div className="flex justify-between items-center">
-                <span className="text-slate-400 font-semibold">현재 경과 일수</span>
-                <span className="font-mono font-bold text-slate-800">Day {day}</span>
+                <span className="text-slate-400 dark:text-slate-500 font-semibold">현재 경과 일수</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">Day {day}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400 font-semibold">현재 평가 자산</span>
-                <span className="font-mono font-bold text-slate-900">
+                <span className="text-slate-400 dark:text-slate-500 font-semibold">현재 평가 자산</span>
+                <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
                   {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(totalAssets)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-400 font-semibold">초기 자본금으로 변경</span>
-                <span className="font-mono font-bold text-rose-600">
+                <span className="text-slate-400 dark:text-slate-500 font-semibold">초기 자본금으로 변경</span>
+                <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
                   {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(INITIAL_CAPITAL)} (1천만 원)
                 </span>
               </div>
@@ -449,7 +466,7 @@ export default function App() {
             <div className="flex gap-3" id="reset-buttons">
               <button
                 onClick={() => setShowResetModal(false)}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold transition-colors"
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors"
               >
                 취소 (돌아가기)
               </button>

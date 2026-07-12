@@ -72,59 +72,59 @@ export default function PortfolioSummary({
     }));
 
     return [
-      { name: '예수금 (Cash)', color: 'bg-slate-300', percent: cashPercent },
+      { name: '예수금 (Cash)', color: 'bg-slate-300 dark:bg-slate-700', percent: cashPercent },
       ...stockAllocations
     ].filter((item) => item.percent > 0.5); // filter out tiny values
   }, [cash, stockDetails, totalPortfolioValue]);
 
   return (
-    <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col h-full" id="portfolio-summary-card">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col h-full transition-all duration-200" id="portfolio-summary-card">
       <div className="mb-3.5" id="portfolio-summary-header">
-        <h3 className="text-sm font-bold text-slate-800 tracking-tight mb-2">내 자산 현황</h3>
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-tight mb-2">내 자산 현황</h3>
 
         {/* Total asset metric */}
         <div className="grid grid-cols-2 gap-3 mb-3" id="portfolio-primary-metrics">
-          <div className="bg-slate-50/50 rounded-xl p-2.5 border border-slate-100/50">
-            <span className="text-[10px] text-slate-400 block mb-0.5">총 평가 자산</span>
-            <span className="font-mono text-base font-bold text-slate-900 tracking-tight block">
+          <div className="bg-slate-50/50 dark:bg-slate-950/60 rounded-xl p-2.5 border border-slate-100/50 dark:border-slate-850">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mb-0.5">총 평가 자산</span>
+            <span className="font-mono text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight block">
               {formatKRW(totalPortfolioValue)}
             </span>
           </div>
 
-          <div className="bg-slate-50/50 rounded-xl p-2.5 border border-slate-100/50">
-            <span className="text-[10px] text-slate-400 block mb-0.5">총 투자 수익률</span>
-            <span className={`font-mono text-base font-bold tracking-tight block ${overallProfitLoss >= 0 ? 'text-rose-600' : 'text-blue-600'}`}>
+          <div className="bg-slate-50/50 dark:bg-slate-950/60 rounded-xl p-2.5 border border-slate-100/50 dark:border-slate-850">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mb-0.5">총 투자 수익률</span>
+            <span className={`font-mono text-base font-bold tracking-tight block ${overallProfitLoss >= 0 ? 'text-rose-600 dark:text-rose-450' : 'text-blue-600 dark:text-blue-400'}`}>
               {overallProfitLoss >= 0 ? '+' : ''}
               {overallReturnPercent.toFixed(2)}%
             </span>
-            <span className={`text-[9px] font-medium block mt-0.5 ${overallProfitLoss >= 0 ? 'text-rose-500' : 'text-blue-500'}`}>
+            <span className={`text-[9px] font-medium block mt-0.5 ${overallProfitLoss >= 0 ? 'text-rose-500 dark:text-rose-400' : 'text-blue-500 dark:text-blue-405'}`}>
               {formatKRW(overallProfitLoss)}
             </span>
           </div>
         </div>
 
         {/* Cash vs Stock details */}
-        <div className="grid grid-cols-2 gap-3 text-[11px] text-slate-500 border-b border-slate-100 pb-3" id="portfolio-detail-metrics">
+        <div className="grid grid-cols-2 gap-3 text-[11px] text-slate-500 dark:text-slate-450 border-b border-slate-100 dark:border-slate-800 pb-3" id="portfolio-detail-metrics">
           <div>
             <div className="flex justify-between mb-1">
               <span>보유 예수금</span>
-              <span className="font-mono font-semibold text-slate-700">{formatKRW(cash)}</span>
+              <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">{formatKRW(cash)}</span>
             </div>
             <div className="flex justify-between">
               <span>주식 평가액</span>
-              <span className="font-mono font-semibold text-slate-700">{formatKRW(totalStockValuation)}</span>
+              <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">{formatKRW(totalStockValuation)}</span>
             </div>
           </div>
-          <div className="border-l border-slate-100 pl-3">
+          <div className="border-l border-slate-100 dark:border-slate-800 pl-3">
             <div className="flex justify-between mb-1">
               <span>총 매수 금액</span>
-              <span className="font-mono font-semibold text-slate-700">
+              <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
                 {formatKRW(stockDetails.reduce((sum, item) => sum + item.totalCost, 0))}
               </span>
             </div>
             <div className="flex justify-between">
               <span>최초 투자 원금</span>
-              <span className="font-mono font-semibold text-slate-700">{formatKRW(initialCapital)}</span>
+              <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">{formatKRW(initialCapital)}</span>
             </div>
           </div>
         </div>
@@ -132,8 +132,8 @@ export default function PortfolioSummary({
 
       {/* Allocation visualizer */}
       <div className="mb-3.5" id="portfolio-allocation">
-        <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">자산 구성비</span>
-        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex" id="allocation-bar-container">
+        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">자산 구성비</span>
+        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex" id="allocation-bar-container">
           {allocations.map((item, index) => (
             <div
               key={index}
@@ -145,46 +145,46 @@ export default function PortfolioSummary({
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2" id="allocation-legend">
           {allocations.map((item, index) => (
-            <div key={index} className="flex items-center gap-1 text-[9px] text-slate-500">
+            <div key={index} className="flex items-center gap-1 text-[9px] text-slate-500 dark:text-slate-400">
               <span className={`w-2 h-2 rounded-full ${item.color}`} />
               <span className="font-medium truncate max-w-[70px]">{item.name}</span>
-              <span className="font-mono font-bold text-slate-700">{item.percent.toFixed(0)}%</span>
+              <span className="font-mono font-bold text-slate-700 dark:text-slate-300">{item.percent.toFixed(0)}%</span>
             </div>
           ))}
           {allocations.length === 0 && (
-            <span className="text-[9px] text-slate-400">보유 자산이 없습니다.</span>
+            <span className="text-[9px] text-slate-400 dark:text-slate-500">보유 자산이 없습니다.</span>
           )}
         </div>
       </div>
 
       {/* Holdings List */}
       <div className="flex-1 overflow-hidden flex flex-col" id="holdings-list-section">
-        <span className="text-[11px] font-semibold text-slate-500 block mb-1.5">보유 종목 현황</span>
-        <div className="flex-1 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-50 max-h-[180px]" id="holdings-scroll-container">
+        <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">보유 종목 현황</span>
+        <div className="flex-1 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-xl divide-y divide-slate-50 dark:divide-slate-800/40 max-h-[180px]" id="holdings-scroll-container">
           {stockDetails.map((item) => (
             <div
               key={item.stockId}
               onClick={() => onSelectStock(item.stockId)}
-              className="p-2 text-left hover:bg-slate-50/50 transition-colors cursor-pointer flex justify-between items-center"
+              className="p-2 text-left hover:bg-slate-50/50 dark:hover:bg-slate-950/40 transition-colors cursor-pointer flex justify-between items-center"
               id={`portfolio-row-${item.stockId}`}
             >
               <div>
                 <div className="flex items-center gap-1">
-                  <span className="font-bold text-[11px] text-slate-800">{item.stock.name}</span>
-                  <span className="text-[8px] font-mono font-semibold text-slate-400 bg-slate-100 px-0.5 py-0.2 rounded">
+                  <span className="font-bold text-[11px] text-slate-800 dark:text-slate-200">{item.stock.name}</span>
+                  <span className="text-[8px] font-mono font-semibold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-950 px-0.5 py-0.2 rounded">
                     {item.stock.ticker}
                   </span>
                 </div>
-                <div className="text-[9px] text-slate-400 mt-0.5">
+                <div className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">
                   {item.shares.toLocaleString()} 주 · 평단 {formatKRW(item.avgBuyPrice)}
                 </div>
               </div>
 
               <div className="text-right">
-                <div className="font-mono font-bold text-[11px] text-slate-800">
+                <div className="font-mono font-bold text-[11px] text-slate-800 dark:text-slate-100">
                   {formatKRW(item.currentValuation)}
                 </div>
-                <div className={`text-[9px] font-bold mt-0.5 ${item.profitLoss >= 0 ? 'text-rose-600' : 'text-blue-600'}`}>
+                <div className={`text-[9px] font-bold mt-0.5 ${item.profitLoss >= 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>
                   {item.profitLoss >= 0 ? '+' : ''}
                   {item.profitLossPercent.toFixed(1)}%
                 </div>

@@ -127,16 +127,16 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
   };
 
   return (
-    <div className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm flex flex-col h-full justify-between animate-fade-in" id="trading-panel-card">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col h-full justify-between animate-fade-in transition-all duration-200" id="trading-panel-card">
       <div id="trading-tabs-header">
         {/* Buy/Sell Tabs */}
-        <div className="grid grid-cols-2 gap-1 bg-slate-100/60 p-0.5 rounded-lg mb-2.5" id="trading-tabs">
+        <div className="grid grid-cols-2 gap-1 bg-slate-100/60 dark:bg-slate-950/60 p-0.5 rounded-lg mb-2.5" id="trading-tabs">
           <button
             onClick={() => setTab('BUY')}
-            className={`py-1 text-[11px] font-bold rounded-md transition-all duration-200 ${
+            className={`py-1 text-[11px] font-bold rounded-md transition-all duration-200 cursor-pointer ${
               tab === 'BUY'
                 ? 'bg-rose-600 text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
             id="tab-buy"
           >
@@ -144,10 +144,10 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
           </button>
           <button
             onClick={() => setTab('SELL')}
-            className={`py-1 text-[11px] font-bold rounded-md transition-all duration-200 ${
+            className={`py-1 text-[11px] font-bold rounded-md transition-all duration-200 cursor-pointer ${
               tab === 'SELL'
                 ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
             id="tab-sell"
           >
@@ -156,42 +156,42 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
         </div>
 
         {/* Selected Stock Info */}
-        <div className="mb-2 p-2 rounded-lg bg-slate-50 border border-slate-100/80" id="stock-trading-info">
+        <div className="mb-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-950/60 border border-slate-100/80 dark:border-slate-850" id="stock-trading-info">
           <div className="flex justify-between items-center mb-0.5">
-            <span className="text-[9px] font-semibold text-slate-400">선택 종목</span>
-            <span className="font-mono text-[9px] font-bold text-slate-500 uppercase bg-slate-200/60 px-1 py-0.2 rounded">{stock.ticker}</span>
+            <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500">선택 종목</span>
+            <span className="font-mono text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase bg-slate-200/60 dark:bg-slate-900 px-1 py-0.2 rounded">{stock.ticker}</span>
           </div>
           <div className="flex justify-between items-end">
-            <span className="text-xs font-bold text-slate-800">{stock.name}</span>
-            <span className="font-mono text-xs font-bold text-slate-900">{formatKRW(stock.price)}</span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{stock.name}</span>
+            <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">{formatKRW(stock.price)}</span>
           </div>
         </div>
 
         {/* Holding Info */}
         <div className="mb-2.5 space-y-1 text-[11px]" id="holding-stats">
-          <div className="flex justify-between py-0.5 border-b border-dashed border-slate-100">
-            <span className="text-slate-400">내 보유 수량</span>
-            <span className="font-mono font-bold text-slate-800">{heldShares.toLocaleString()} 주</span>
+          <div className="flex justify-between py-0.5 border-b border-dashed border-slate-100 dark:border-slate-800">
+            <span className="text-slate-400 dark:text-slate-500">내 보유 수량</span>
+            <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{heldShares.toLocaleString()} 주</span>
           </div>
           {heldShares > 0 && (
             <>
-              <div className="flex justify-between py-0.5 border-b border-dashed border-slate-100">
-                <span className="text-slate-400">평균 매수가</span>
-                <span className="font-mono font-semibold text-slate-800">{formatKRW(avgBuyPrice)}</span>
+              <div className="flex justify-between py-0.5 border-b border-dashed border-slate-100 dark:border-slate-800">
+                <span className="text-slate-400 dark:text-slate-500">평균 매수가</span>
+                <span className="font-mono font-semibold text-slate-800 dark:text-slate-200">{formatKRW(avgBuyPrice)}</span>
               </div>
-              <div className="flex justify-between py-0.5 border-b border-dashed border-slate-100">
-                <span className="text-slate-400">평가 손익</span>
-                <span className={`font-mono font-bold ${profitLoss >= 0 ? 'text-rose-600' : 'text-blue-600'}`}>
+              <div className="flex justify-between py-0.5 border-b border-dashed border-slate-100 dark:border-slate-800">
+                <span className="text-slate-400 dark:text-slate-500">평가 손익</span>
+                <span className={`font-mono font-bold ${profitLoss >= 0 ? 'text-rose-600 dark:text-rose-450' : 'text-blue-600 dark:text-blue-400'}`}>
                   {formatKRW(profitLoss)} ({profitLossPercent >= 0 ? '+' : ''}{profitLossPercent.toFixed(2)}%)
                 </span>
               </div>
             </>
           )}
           <div className="flex justify-between py-0.5">
-            <span className="text-slate-400">
+            <span className="text-slate-400 dark:text-slate-500">
               {tab === 'BUY' ? '주문 가능 예수금' : '매도 가능 수량'}
             </span>
-            <span className="font-mono font-bold text-slate-800">
+            <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
               {tab === 'BUY' ? formatKRW(cash) : `${heldShares.toLocaleString()} 주`}
             </span>
           </div>
@@ -201,21 +201,21 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
         <form onSubmit={handleSubmit} className="space-y-2" id="trading-form">
           <div className="space-y-1">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] font-bold text-slate-500">거래 수량 지정</label>
-              <span className="text-[9px] text-slate-400 font-mono">최대: {tab === 'BUY' ? maxBuyable.toLocaleString() : maxSellable.toLocaleString()}주</span>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400">거래 수량 지정</label>
+              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-mono">최대: {tab === 'BUY' ? maxBuyable.toLocaleString() : maxSellable.toLocaleString()}주</span>
             </div>
             <div className="flex gap-1">
               <button
                 type="button"
                 onClick={() => handleIncrement(-10)}
-                className="w-7 h-7 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-md font-bold flex items-center justify-center transition-colors text-[9px]"
+                className="w-7 h-7 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 rounded-md font-bold flex items-center justify-center transition-colors text-[9px] cursor-pointer"
               >
                 -10
               </button>
               <button
                 type="button"
                 onClick={() => handleIncrement(-1)}
-                className="w-7 h-7 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-md font-bold flex items-center justify-center transition-colors text-[9px]"
+                className="w-7 h-7 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 rounded-md font-bold flex items-center justify-center transition-colors text-[9px] cursor-pointer"
               >
                 -1
               </button>
@@ -224,20 +224,20 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
                 value={quantityStr}
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 placeholder="0"
-                className="flex-1 text-center font-mono font-bold text-slate-800 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400 h-7 text-xs"
+                className="flex-1 text-center font-mono font-bold text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-700 bg-white dark:bg-slate-950 h-7 text-xs"
                 id="quantity-input"
               />
               <button
                 type="button"
                 onClick={() => handleIncrement(1)}
-                className="w-7 h-7 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-md font-bold flex items-center justify-center transition-colors text-[9px]"
+                className="w-7 h-7 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 rounded-md font-bold flex items-center justify-center transition-colors text-[9px] cursor-pointer"
               >
                 +1
               </button>
               <button
                 type="button"
                 onClick={() => handleIncrement(10)}
-                className="w-7 h-7 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-md font-bold flex items-center justify-center transition-colors text-[9px]"
+                className="w-7 h-7 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 rounded-md font-bold flex items-center justify-center transition-colors text-[9px] cursor-pointer"
               >
                 +10
               </button>
@@ -246,33 +246,33 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
 
           {/* Quick presets (Percent) */}
           <div className="space-y-0.5">
-            <span className="text-[9px] font-semibold text-slate-400 block">비율 지정</span>
+            <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 block">비율 지정</span>
             <div className="grid grid-cols-4 gap-1" id="presets-grid">
               <button
                 type="button"
                 onClick={() => handlePreset(0.1)}
-                className="py-0.5 text-[9px] font-bold border border-slate-150 hover:bg-slate-50 text-slate-600 rounded-md transition-colors"
+                className="py-0.5 text-[9px] font-bold border border-slate-150 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 rounded-md transition-colors cursor-pointer"
               >
                 10%
               </button>
               <button
                 type="button"
                 onClick={() => handlePreset(0.25)}
-                className="py-0.5 text-[9px] font-bold border border-slate-150 hover:bg-slate-50 text-slate-600 rounded-md transition-colors"
+                className="py-0.5 text-[9px] font-bold border border-slate-150 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 rounded-md transition-colors cursor-pointer"
               >
                 25%
               </button>
               <button
                 type="button"
                 onClick={() => handlePreset(0.5)}
-                className="py-0.5 text-[9px] font-bold border border-slate-150 hover:bg-slate-50 text-slate-600 rounded-md transition-colors"
+                className="py-0.5 text-[9px] font-bold border border-slate-150 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 rounded-md transition-colors cursor-pointer"
               >
                 50%
               </button>
               <button
                 type="button"
                 onClick={() => handlePreset(1.0)}
-                className="py-0.5 text-[9px] font-bold border border-slate-150 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors"
+                className="py-0.5 text-[9px] font-bold border border-slate-150 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md transition-colors cursor-pointer"
               >
                 전량
               </button>
@@ -281,33 +281,33 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
 
           {/* Quick presets (KRW Value amount) */}
           <div className="space-y-0.5">
-            <span className="text-[9px] font-semibold text-slate-400 block">금액별 추가</span>
+            <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 block">금액별 추가</span>
             <div className="grid grid-cols-4 gap-1" id="presets-monetary-grid">
               <button
                 type="button"
                 onClick={() => handleMonetaryAdd(100000)}
-                className="py-0.5 text-[9px] font-bold bg-slate-50 border border-slate-150 hover:bg-slate-100 text-slate-700 rounded-md transition-colors"
+                className="py-0.5 text-[9px] font-bold bg-slate-50 dark:bg-slate-950/50 border border-slate-150 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md transition-colors cursor-pointer"
               >
                 +10만
               </button>
               <button
                 type="button"
                 onClick={() => handleMonetaryAdd(500000)}
-                className="py-0.5 text-[9px] font-bold bg-slate-50 border border-slate-150 hover:bg-slate-100 text-slate-700 rounded-md transition-colors"
+                className="py-0.5 text-[9px] font-bold bg-slate-50 dark:bg-slate-950/50 border border-slate-150 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md transition-colors cursor-pointer"
               >
                 +50만
               </button>
               <button
                 type="button"
                 onClick={() => handleMonetaryAdd(1000000)}
-                className="py-0.5 text-[9px] font-bold bg-slate-50 border border-slate-150 hover:bg-slate-100 text-slate-700 rounded-md transition-colors"
+                className="py-0.5 text-[9px] font-bold bg-slate-50 dark:bg-slate-950/50 border border-slate-150 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md transition-colors cursor-pointer"
               >
                 +100만
               </button>
               <button
                 type="button"
                 onClick={() => handleMonetaryAdd(5000000)}
-                className="py-0.5 text-[9px] font-bold bg-slate-50 border border-slate-150 hover:bg-slate-100 text-slate-700 rounded-md transition-colors"
+                className="py-0.5 text-[9px] font-bold bg-slate-50 dark:bg-slate-950/50 border border-slate-150 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-md transition-colors cursor-pointer"
               >
                 +500만
               </button>
@@ -315,24 +315,24 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
           </div>
 
           {error && (
-            <div className="text-rose-500 text-[10px] font-semibold bg-rose-50 border border-rose-100 rounded-lg p-2 text-center">
+            <div className="text-rose-500 dark:text-rose-450 text-[10px] font-semibold bg-rose-50 dark:bg-rose-955/25 border border-rose-100 dark:border-rose-900/40 rounded-lg p-2 text-center animate-shake">
               ⚠️ {error}
             </div>
           )}
         </form>
       </div>
 
-      <div className="mt-2.5 pt-2 border-t border-slate-100" id="trading-action-footer">
+      <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800" id="trading-action-footer">
         {/* Cost estimate & Balance forecast */}
         <div className="space-y-0.5 mb-2.5 text-[11px]">
           <div className="flex justify-between items-center">
-            <span className="font-medium text-slate-400">총 주문 금액</span>
-            <span className="font-mono text-xs font-bold text-slate-900">{formatKRW(totalCost)}</span>
+            <span className="font-medium text-slate-400 dark:text-slate-550">총 주문 금액</span>
+            <span className="font-mono text-xs font-bold text-slate-900 dark:text-slate-100">{formatKRW(totalCost)}</span>
           </div>
           {quantity > 0 && (
-            <div className="flex justify-between items-center text-[9px] text-slate-400">
+            <div className="flex justify-between items-center text-[9px] text-slate-400 dark:text-slate-500">
               <span>거래 후 예상 예수금</span>
-              <span className="font-mono font-medium text-slate-600">
+              <span className="font-mono font-medium text-slate-600 dark:text-slate-300">
                 {tab === 'BUY' ? formatKRW(cash - totalCost) : formatKRW(cash + totalCost)}
               </span>
             </div>
@@ -343,12 +343,12 @@ export default function TradingPanel({ stock, cash, portfolioItem, onTrade }: Tr
         <button
           onClick={handleSubmit}
           disabled={isInvalid}
-          className={`w-full py-1.5 rounded-lg font-bold text-[11px] tracking-wide text-white transition-all duration-200 shadow-xs flex items-center justify-center gap-1 ${
+          className={`w-full py-1.5 rounded-lg font-bold text-[11px] tracking-wide text-white transition-all duration-200 shadow-xs flex items-center justify-center gap-1 cursor-pointer ${
             isInvalid
-              ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
+              ? 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed text-slate-500 dark:text-slate-650 shadow-none'
               : tab === 'BUY'
-                ? 'bg-rose-600 hover:bg-rose-700 active:scale-[0.99] focus:ring-4 focus:ring-rose-100'
-                : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] focus:ring-4 focus:ring-blue-100'
+                ? 'bg-rose-600 hover:bg-rose-700 active:scale-[0.99] focus:ring-4 focus:ring-rose-100 dark:focus:ring-rose-950/50'
+                : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-950/50'
           }`}
           id="trade-submit-button"
         >
