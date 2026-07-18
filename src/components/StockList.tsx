@@ -102,7 +102,7 @@ export default function StockList({ stocks, portfolio, selectedStockId, onSelect
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/40 max-h-[380px] lg:max-h-none" id="stock-list-container">
+      <div className="flex-1 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/40" id="stock-list-container">
         {filteredStocks.map((stock) => {
           const isSelected = stock.id === selectedStockId;
           const isUp = stock.price >= stock.prevPrice;

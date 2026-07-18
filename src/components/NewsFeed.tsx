@@ -283,7 +283,7 @@ export default function NewsFeed({ news, stocks, onSelectStock, onMarkAllAsRead 
           )}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/40 p-1 max-h-[380px] lg:max-h-none" id="news-list-container">
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/40 p-1" id="news-list-container">
           {filteredNews.map((item) => {
             const impactedStock = getStockInfo(item.impactStockId);
             const isPositive = item.type === 'positive';

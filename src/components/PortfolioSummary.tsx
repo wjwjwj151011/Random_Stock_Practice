@@ -181,7 +181,7 @@ export default function PortfolioSummary({
       {/* Holdings List */}
       <div className="flex-1 overflow-hidden flex flex-col" id="holdings-list-section">
         <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block mb-1.5">보유 종목 현황</span>
-        <div className="flex-1 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-xl divide-y divide-slate-50 dark:divide-slate-800/40 max-h-[180px]" id="holdings-scroll-container">
+        <div className="flex-1 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-xl divide-y divide-slate-50 dark:divide-slate-800/40" id="holdings-scroll-container">
           {stockDetails.map((item) => (
             <div
               key={item.stockId}

@@ -7,7 +7,6 @@ import StockList from './components/StockList';
 import TradingPanel from './components/TradingPanel';
 import PortfolioSummary from './components/PortfolioSummary';
 import NewsFeed from './components/NewsFeed';
-import TransactionHistory from './components/TransactionHistory';
 import BankPanel from './components/BankPanel';
 
 const INITIAL_CAPITAL = 10000000; // 10,000,000 KRW (1천만 원)
@@ -582,60 +581,60 @@ export default function App() {
       />
 
       {/* Main Layout Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8" id="main-content-area">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 md:p-4 lg:p-4 flex flex-col justify-center" id="main-content-area">
         {activeTab === 'TRADING' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="bento-grid">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4" id="bento-grid">
             
             {/* Left Column: Stocks (Market) & News (Feed) */}
-            <div className="lg:col-span-3 flex flex-col gap-6" id="column-market-news">
-              <StockList
-                stocks={stocks}
-                portfolio={portfolio}
-                selectedStockId={selectedStockId}
-                onSelectStock={setSelectedStockId}
-              />
-              <NewsFeed
-                news={news}
-                stocks={stocks}
-                onSelectStock={setSelectedStockId}
-                onMarkAllAsRead={handleMarkAllNewsRead}
-              />
-            </div>
-
-            {/* Center Column: Stock Chart & Trade History */}
-            <div className="lg:col-span-5 flex flex-col gap-6" id="column-charts">
-              <div className="flex-1 min-h-[360px]" id="chart-panel-container">
-                <StockChart stock={currentStock} sharesHeld={currentPortfolioItem?.shares || 0} />
+            <div className="lg:col-span-3 flex flex-col gap-4 lg:h-[540px]" id="column-market-news">
+              <div className="h-[280px]">
+                <StockList
+                  stocks={stocks}
+                  portfolio={portfolio}
+                  selectedStockId={selectedStockId}
+                  onSelectStock={setSelectedStockId}
+                />
               </div>
-              <div id="tx-history-container">
-                <TransactionHistory
-                  transactions={transactions}
-                  onClear={() => setTransactions([])}
+              <div className="h-[244px]">
+                <NewsFeed
+                  news={news}
+                  stocks={stocks}
+                  onSelectStock={setSelectedStockId}
+                  onMarkAllAsRead={handleMarkAllNewsRead}
                 />
               </div>
             </div>
 
+            {/* Center Column: Stock Chart & Trade History */}
+            <div className="lg:col-span-5 lg:h-[540px]" id="column-charts">
+              <StockChart stock={currentStock} sharesHeld={currentPortfolioItem?.shares || 0} />
+            </div>
+
             {/* Right Column: Assets Portfolio & Buying Console */}
-            <div className="lg:col-span-4 flex flex-col gap-6" id="column-trading">
-              <TradingPanel
-                stock={currentStock}
-                cash={cash}
-                portfolioItem={currentPortfolioItem}
-                onTrade={handleTrade}
-                autoSellOrders={autoSellOrders}
-                onAddAutoSellOrder={handleAddAutoSellOrder}
-                onCancelAutoSellOrder={handleCancelAutoSellOrder}
-              />
-              <PortfolioSummary
-                stocks={stocks}
-                portfolio={portfolio}
-                cash={cash}
-                initialCapital={INITIAL_CAPITAL}
-                onSelectStock={setSelectedStockId}
-                savings={savings}
-                loan={loan}
-                onGoToBank={() => setActiveTab('BANK')}
-              />
+            <div className="lg:col-span-4 flex flex-col gap-4 lg:h-[540px]" id="column-trading">
+              <div className="h-[300px]">
+                <TradingPanel
+                  stock={currentStock}
+                  cash={cash}
+                  portfolioItem={currentPortfolioItem}
+                  onTrade={handleTrade}
+                  autoSellOrders={autoSellOrders}
+                  onAddAutoSellOrder={handleAddAutoSellOrder}
+                  onCancelAutoSellOrder={handleCancelAutoSellOrder}
+                />
+              </div>
+              <div className="h-[224px]">
+                <PortfolioSummary
+                  stocks={stocks}
+                  portfolio={portfolio}
+                  cash={cash}
+                  initialCapital={INITIAL_CAPITAL}
+                  onSelectStock={setSelectedStockId}
+                  savings={savings}
+                  loan={loan}
+                  onGoToBank={() => setActiveTab('BANK')}
+                />
+              </div>
             </div>
 
           </div>
