@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Stock, PortfolioItem, NewsItem, Transaction, AutoSellOrder } from './types';
+import { Stock, PortfolioItem, NewsItem, Transaction, AutoSellOrder, User } from './types';
 import { INITIAL_STOCKS, calculateNextPrice, generateRandomNews } from './data/stocks';
 import Header from './components/Header';
 import StockChart from './components/StockChart';
@@ -8,6 +8,9 @@ import TradingPanel from './components/TradingPanel';
 import PortfolioSummary from './components/PortfolioSummary';
 import NewsFeed from './components/NewsFeed';
 import BankPanel from './components/BankPanel';
+import AuthModal from './components/AuthModal';
+import { getCurrentUser, loadUserGameState, saveUserGameState, setCurrentUserSession } from './lib/auth';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 
 const INITIAL_CAPITAL = 10000000; // 10,000,000 KRW (1천만 원)
 const TARGET_GOAL = 30000000; // 30,000,000 KRW (3천만 원)
@@ -15,6 +18,40 @@ const SAVINGS_INTEREST_RATE = 0.005; // 0.5% per Day
 const LOAN_INTEREST_RATE = 0.012;    // 1.2% per Day
 
 export default function App() {
+  // --- Auth State ---
+  const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+
+  // Subscribe to Supabase Auth state changes if configured
+  useEffect(() => {
+    if (isSupabaseConfigured && supabase) {
+      const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          const sbUser = session.user;
+          const userMeta = sbUser.user_metadata || {};
+          const email = sbUser.email || '';
+          const username = userMeta.username || (email ? email.split('@')[0] : 'user');
+          const name = userMeta.name || username;
+
+          const updatedUser: User = {
+            username,
+            email,
+            name,
+            passwordHash: sbUser.id,
+            createdAt: sbUser.created_at || new Date().toISOString(),
+            provider: 'supabase'
+          };
+          setCurrentUser(updatedUser);
+          setCurrentUserSession(updatedUser);
+        }
+      });
+
+      return () => {
+        authListener.subscription.unsubscribe();
+      };
+    }
+  }, []);
+
   // --- Game State ---
   const [stocks, setStocks] = useState<Stock[]>(() => {
     // Attempt load from localStorage or fall back to INITIAL_STOCKS
@@ -184,6 +221,47 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('stock_game_autosell', JSON.stringify(autoSellOrders));
   }, [autoSellOrders]);
+
+  // Handle user account switching / hydration
+  useEffect(() => {
+    if (currentUser) {
+      const userState = loadUserGameState(currentUser.username);
+      if (userState) {
+        setCash(userState.cash ?? INITIAL_CAPITAL);
+        setPortfolio(userState.portfolio ?? []);
+        setSavings(userState.savings ?? 0);
+        setLoan(userState.loan ?? 0);
+        setDay(userState.day ?? 1);
+        setAutoSellOrders(userState.autoSellOrders ?? []);
+        setHighScore(userState.highScore ?? INITIAL_CAPITAL);
+        setGoalCelebrated(userState.goalCelebrated ?? false);
+        setTransactions(userState.transactions ?? []);
+      }
+    }
+  }, [currentUser]);
+
+  // Sync current game state to user's dedicated save slot
+  useEffect(() => {
+    if (currentUser) {
+      saveUserGameState(currentUser.username, {
+        cash,
+        portfolio,
+        savings,
+        loan,
+        day,
+        autoSellOrders,
+        highScore,
+        goalCelebrated,
+        transactions,
+        stats: {
+          totalTrades: transactions.length,
+          winningTrades: 0,
+          highestPortfolioValue: highScore,
+          biggestGainPercent: 0
+        }
+      });
+    }
+  }, [currentUser, cash, portfolio, savings, loan, day, autoSellOrders, highScore, goalCelebrated, transactions]);
 
   // Track highscore and goal
   useEffect(() => {
@@ -578,6 +656,16 @@ export default function App() {
         onToggleDarkMode={() => setDarkMode(!darkMode)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        currentUser={currentUser}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+      />
+
+      {/* Auth Modal (Sign Up & Login) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
+        onUserChange={(user) => setCurrentUser(user)}
       />
 
       {/* Main Layout Area */}

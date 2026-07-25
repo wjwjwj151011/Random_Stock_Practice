@@ -65,3 +65,25 @@ export interface AutoSellOrder {
   isActive: boolean;
 }
 
+export interface User {
+  username: string; // User ID or Email
+  email?: string;   // Supabase Email
+  name: string;     // Display nickname
+  passwordHash: string; // Simulated stored password hash or Supabase Auth ID
+  createdAt: string;
+  provider?: 'supabase' | 'local';
+}
+
+export interface UserGameState {
+  cash: number;
+  portfolio: PortfolioItem[];
+  savings: number;
+  loan: number;
+  day: number;
+  autoSellOrders: AutoSellOrder[];
+  highScore: number;
+  goalCelebrated: boolean;
+  transactions: Transaction[];
+  stats: GameStats;
+}
+

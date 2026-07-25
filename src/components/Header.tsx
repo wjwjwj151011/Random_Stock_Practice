@@ -1,4 +1,5 @@
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, User as UserIcon, LogIn } from 'lucide-react';
+import { User } from '../types';
 
 interface HeaderProps {
   day: number;
@@ -12,6 +13,8 @@ interface HeaderProps {
   onToggleDarkMode: () => void;
   activeTab?: 'TRADING' | 'BANK';
   setActiveTab?: (tab: 'TRADING' | 'BANK') => void;
+  currentUser: User | null;
+  onOpenAuthModal: () => void;
 }
 
 export default function Header({
@@ -25,7 +28,9 @@ export default function Header({
   darkMode,
   onToggleDarkMode,
   activeTab,
-  setActiveTab
+  setActiveTab,
+  currentUser,
+  onOpenAuthModal
 }: HeaderProps) {
   // Format currency
   const formatKRW = (value: number) => {
@@ -148,6 +153,30 @@ export default function Header({
           </div>
 
           <div className="flex items-center gap-2 border-l border-slate-100 dark:border-slate-800 pl-2" id="highscore-reset-row">
+            {/* User Login/Account Button */}
+            <button
+              onClick={onOpenAuthModal}
+              className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                currentUser
+                  ? 'bg-emerald-50 dark:bg-emerald-955/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-100'
+                  : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white'
+              }`}
+              id="header-auth-btn"
+              title={currentUser ? `${currentUser.name} 계정 관리` : '로그인 및 회원가입'}
+            >
+              {currentUser ? (
+                <>
+                  <UserIcon size={12} className="text-emerald-600 dark:text-emerald-400" />
+                  <span className="max-w-[70px] truncate">{currentUser.name}</span>
+                </>
+              ) : (
+                <>
+                  <LogIn size={12} />
+                  <span>로그인 / 회원가입</span>
+                </>
+              )}
+            </button>
+
             {/* Highscore display */}
             <div className="hidden sm:block text-right" id="highscore-block">
               <span className="text-[8px] text-slate-400 dark:text-slate-500 font-semibold block leading-none mb-0.5">최고 자산</span>
