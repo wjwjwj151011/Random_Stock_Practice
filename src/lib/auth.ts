@@ -26,9 +26,26 @@ export function getRegisteredUsers(): User[] {
   }
 }
 
-// Save registered users list
-function saveRegisteredUsers(users: User[]): void {
+// Save registered users list to local storage
+export function saveRegisteredUsers(users: User[]): void {
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+// Async Fetch registered users from backend server
+export async function fetchRegisteredUsersAsync(): Promise<User[]> {
+  try {
+    const res = await fetch('/api/users');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.users)) {
+        saveRegisteredUsers(data.users);
+        return data.users;
+      }
+    }
+  } catch (e) {
+    console.warn('Backend /api/users fetch failed, fallback to local cache', e);
+  }
+  return getRegisteredUsers();
 }
 
 // Get logged-in user session
@@ -41,7 +58,7 @@ export function getCurrentUser(): User | null {
   }
 }
 
-// Set current logged-in user
+// Set current logged-in user session
 export function setCurrentUserSession(user: User | null): void {
   if (user) {
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
@@ -50,7 +67,7 @@ export function setCurrentUserSession(user: User | null): void {
   }
 }
 
-// Async Register function supporting Supabase & Local
+// Async Register function supporting Server API, Supabase & Local
 export async function registerUserAsync(
   emailOrUsername: string,
   name: string,
@@ -69,50 +86,44 @@ export async function registerUserAsync(
     return { success: false, message: '비밀번호는 최소 6자 이상이어야 합니다.' };
   }
 
-  // --- Attempt Supabase Sign Up if configured ---
-  if (isSupabaseConfigured && supabase) {
-    try {
-      // Ensure email format for Supabase Auth
-      const email = cleanInput.includes('@') ? cleanInput : `${cleanInput}@stockgame.app`;
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: cleanName,
-            username: cleanInput.split('@')[0]
-          }
-        }
-      });
+  const cleanUsername = cleanInput.toLowerCase().replace(/[^a-z0-9_.-]/g, '') || 'user_' + Date.now();
+  const passwordHash = hashPassword(password);
 
-      if (error) {
-        return { success: false, message: `Supabase 오류: ${error.message}` };
+  // --- 1. Call Express Server API ---
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: cleanUsername,
+        email: cleanInput.includes('@') ? cleanInput : undefined,
+        name: cleanName,
+        passwordHash,
+        provider: 'local',
+      }),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success && data.user) {
+      const newUser: User = data.user;
+
+      // Update local storage user list
+      const users = getRegisteredUsers();
+      if (!users.some((u) => u.username.toLowerCase() === newUser.username.toLowerCase())) {
+        users.push(newUser);
+        saveRegisteredUsers(users);
       }
 
-      const sbUser = data.user;
-      if (sbUser) {
-        const newUser: User = {
-          username: cleanInput.split('@')[0],
-          email: sbUser.email || email,
-          name: cleanName,
-          passwordHash: sbUser.id,
-          createdAt: sbUser.created_at || new Date().toISOString(),
-          provider: 'supabase'
-        };
-        setCurrentUserSession(newUser);
-        return { 
-          success: true, 
-          message: data.session ? '슈퍼베이스(Supabase) 회원가입 및 로그인 완료!' : '슈퍼베이스 회원가입 신청 완료! (이메일 확인이 필요할 수 있습니다)', 
-          user: newUser 
-        };
-      }
-    } catch (err: any) {
-      console.warn('Supabase auth failed, falling back to local auth mode', err);
+      setCurrentUserSession(newUser);
+      return { success: true, message: '회원가입이 완료되었습니다!', user: newUser };
+    } else if (data.message) {
+      return { success: false, message: data.message };
     }
+  } catch (err) {
+    console.warn('Server registration failed, attempting fallback local registration', err);
   }
 
-  // --- Fallback Local Registration ---
-  const cleanUsername = cleanInput.toLowerCase().replace(/[^a-z0-9_.-]/g, '') || 'user_' + Date.now();
+  // --- 2. Fallback Local Registration ---
   const users = getRegisteredUsers();
   if (users.some((u) => u.username.toLowerCase() === cleanUsername)) {
     return { success: false, message: '이미 존재하는 아이디입니다.' };
@@ -122,9 +133,9 @@ export async function registerUserAsync(
     username: cleanUsername,
     email: cleanInput.includes('@') ? cleanInput : undefined,
     name: cleanName,
-    passwordHash: hashPassword(password),
+    passwordHash,
     createdAt: new Date().toISOString(),
-    provider: 'local'
+    provider: 'local',
   };
 
   users.push(newUser);
@@ -134,7 +145,7 @@ export async function registerUserAsync(
   return { success: true, message: '회원가입이 완료되었습니다!', user: newUser };
 }
 
-// Async Login function supporting Supabase & Local
+// Async Login function supporting Server API & Local
 export async function loginUserAsync(
   emailOrUsername: string,
   password: string
@@ -145,47 +156,44 @@ export async function loginUserAsync(
     return { success: false, message: '아이디/이메일과 비밀번호를 모두 입력해주세요.' };
   }
 
-  // --- Attempt Supabase Sign In if configured ---
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const email = cleanInput.includes('@') ? cleanInput : `${cleanInput}@stockgame.app`;
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+  const passwordHash = hashPassword(password);
 
-      if (!error && data.user) {
-        const sbUser = data.user;
-        const userMeta = sbUser.user_metadata || {};
-        const userObj: User = {
-          username: userMeta.username || cleanInput.split('@')[0],
-          email: sbUser.email || email,
-          name: userMeta.name || userMeta.username || cleanInput.split('@')[0],
-          passwordHash: sbUser.id,
-          createdAt: sbUser.created_at || new Date().toISOString(),
-          provider: 'supabase'
-        };
-        setCurrentUserSession(userObj);
-        return { success: true, message: '슈퍼베이스(Supabase) 로그인 성공!', user: userObj };
-      } else if (error && isSupabaseConfigured) {
-        // If Supabase was configured and gave error, report it
-        return { success: false, message: `Supabase 로그인 실패: ${error.message}` };
-      }
-    } catch (err: any) {
-      console.warn('Supabase login exception', err);
+  // --- 1. Try Server Login ---
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emailOrUsername: cleanInput, passwordHash }),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success && data.user) {
+      const userObj: User = data.user;
+      setCurrentUserSession(userObj);
+
+      // Refresh registered users
+      fetchRegisteredUsersAsync().catch(() => {});
+
+      return { success: true, message: '로그인되었습니다!', user: userObj };
+    } else if (res.status === 401 || res.status === 404) {
+      return { success: false, message: data.message || '로그인에 실패했습니다.' };
     }
+  } catch (e) {
+    console.warn('Server login failed, trying local fallback', e);
   }
 
-  // --- Fallback Local Login ---
+  // --- 2. Local Fallback Login ---
   const cleanUsername = cleanInput.toLowerCase();
   const users = getRegisteredUsers();
-  const foundUser = users.find((u) => u.username.toLowerCase() === cleanUsername || (u.email && u.email.toLowerCase() === cleanUsername));
+  const foundUser = users.find(
+    (u) => u.username.toLowerCase() === cleanUsername || (u.email && u.email.toLowerCase() === cleanUsername)
+  );
 
   if (!foundUser) {
     return { success: false, message: '존재하지 않는 사용자 계정입니다.' };
   }
 
-  if (foundUser.passwordHash !== hashPassword(password)) {
+  if (foundUser.passwordHash !== passwordHash) {
     return { success: false, message: '비밀번호가 일치하지 않습니다.' };
   }
 
@@ -195,36 +203,27 @@ export async function loginUserAsync(
 
 // Async Logout
 export async function logoutUserAsync(): Promise<void> {
-  if (isSupabaseConfigured && supabase) {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.error('Supabase logout error', e);
-    }
-  }
   setCurrentUserSession(null);
 }
 
 // Async Delete Account
 export async function deleteAccountAsync(user: User): Promise<{ success: boolean; message: string }> {
   try {
-    // 1. Delete user game state
+    // 1. Call server API
+    await fetch('/api/admin/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user.username }),
+    }).catch(() => {});
+
+    // 2. Delete user game state locally
     const stateKey = getUserStateKey(user.username);
     localStorage.removeItem(stateKey);
 
-    // 2. Remove user from local storage user list if present
+    // 3. Remove user from local storage user list
     const users = getRegisteredUsers();
     const filteredUsers = users.filter((u) => u.username.toLowerCase() !== user.username.toLowerCase());
     saveRegisteredUsers(filteredUsers);
-
-    // 3. Handle Supabase sign out / account deletion
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await supabase.auth.signOut();
-      } catch (err) {
-        console.warn('Supabase signout during delete', err);
-      }
-    }
 
     // 4. Clear current session
     setCurrentUserSession(null);
@@ -251,11 +250,70 @@ export function loadUserGameState(username: string): UserGameState | null {
   }
 }
 
+export async function loadUserGameStateAsync(username: string): Promise<UserGameState | null> {
+  try {
+    const res = await fetch(`/api/user-state/${encodeURIComponent(username)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.state) {
+        saveUserGameState(username, data.state);
+        return data.state;
+      }
+    }
+  } catch (e) {
+    console.warn('Async loadUserGameState failed, falling back to local storage', e);
+  }
+  return loadUserGameState(username);
+}
+
 export function saveUserGameState(username: string, state: UserGameState): void {
   try {
     const key = getUserStateKey(username);
     localStorage.setItem(key, JSON.stringify(state));
+
+    // Async push to server
+    fetch(`/api/user-state/${encodeURIComponent(username)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state }),
+    }).catch((err) => console.warn('Sync state to server failed', err));
   } catch (e) {
     console.error('Failed to save user game state', e);
+  }
+}
+
+// Admin API helper to grant cash or execute command
+export async function executeAdminCashGrantAsync(
+  commandOrTarget: string,
+  amount?: number
+): Promise<{ success: boolean; message: string; users?: User[]; targetUsername?: string; newCash?: number }> {
+  try {
+    const payload = typeof amount === 'number'
+      ? { target: commandOrTarget, amount }
+      : { command: commandOrTarget };
+
+    const res = await fetch('/api/admin/grant-cash', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (Array.isArray(data.users)) {
+        saveRegisteredUsers(data.users);
+      }
+      return {
+        success: true,
+        message: data.message,
+        users: data.users,
+        targetUsername: data.targetUsername,
+        newCash: data.newCash,
+      };
+    } else {
+      return { success: false, message: data.message || '명령어 실행에 실패했습니다.' };
+    }
+  } catch (e) {
+    return { success: false, message: '서버와의 통신 오류가 발생했습니다.' };
   }
 }

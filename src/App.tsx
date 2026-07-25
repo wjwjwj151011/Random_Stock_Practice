@@ -10,7 +10,7 @@ import NewsFeed from './components/NewsFeed';
 import BankPanel from './components/BankPanel';
 import AuthModal from './components/AuthModal';
 import AdminModal from './components/AdminModal';
-import { getCurrentUser, loadUserGameState, saveUserGameState, setCurrentUserSession } from './lib/auth';
+import { getCurrentUser, loadUserGameState, loadUserGameStateAsync, saveUserGameState, setCurrentUserSession, fetchRegisteredUsersAsync } from './lib/auth';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 
 const INITIAL_CAPITAL = 10000000; // 10,000,000 KRW (1천만 원)
@@ -257,12 +257,20 @@ export default function App() {
     localStorage.setItem('stock_game_autosell', JSON.stringify(autoSellOrders));
   }, [autoSellOrders]);
 
-  // Handle user account switching / hydration
+  // Initial fetch of registered users list on mount
   useEffect(() => {
-    if (currentUser) {
-      const userState = loadUserGameState(currentUser.username);
-      if (userState) {
-        setCash(userState.cash ?? INITIAL_CAPITAL);
+    fetchRegisteredUsersAsync().catch(() => {});
+  }, []);
+
+  // Handle user account switching / hydration & periodic server sync
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let isMounted = true;
+    const syncState = async () => {
+      const userState = await loadUserGameStateAsync(currentUser.username);
+      if (userState && isMounted) {
+        setCash((prev) => (userState.cash !== undefined ? userState.cash : prev));
         setPortfolio(userState.portfolio ?? []);
         setSavings(userState.savings ?? 0);
         setLoan(userState.loan ?? 0);
@@ -272,7 +280,16 @@ export default function App() {
         setGoalCelebrated(userState.goalCelebrated ?? false);
         setTransactions(userState.transactions ?? []);
       }
-    }
+    };
+
+    syncState();
+
+    // Refresh every 5 seconds so live cash changes from admin appear on user device
+    const interval = setInterval(syncState, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [currentUser]);
 
   // Sync current game state to user's dedicated save slot

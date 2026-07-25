@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stock, User } from '../types';
 import { ShieldAlert, TrendingUp, TrendingDown, DollarSign, Zap, RefreshCw, Layers, Users, X, Check } from 'lucide-react';
-import { getRegisteredUsers } from '../lib/auth';
+import { getRegisteredUsers, fetchRegisteredUsersAsync, executeAdminCashGrantAsync } from '../lib/auth';
 
 interface AdminModalProps {
   isOpen: boolean;
@@ -31,6 +31,16 @@ export default function AdminModal({
   const [selectedStockId, setSelectedStockId] = useState<string>(stocks[0]?.id || 'dog-coin');
   const [multiplierInput, setMultiplierInput] = useState<string>('2');
   const [notice, setNotice] = useState<string | null>(null);
+  const [userList, setUserList] = useState<User[]>([]);
+
+  // Refresh user list from server whenever modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      fetchRegisteredUsersAsync().then((users) => {
+        setUserList(users);
+      });
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -39,88 +49,40 @@ export default function AdminModal({
 
   const showNotice = (msg: string) => {
     setNotice(msg);
-    setTimeout(() => setNotice(null), 3000);
+    setTimeout(() => setNotice(null), 3500);
   };
 
   // Command parser for format: ;(아이디/닉네임) (금액) or ;(아이디/닉네임) -(금액) -> e.g. ;woojin 5000000 or ;woojin -1000000
-  const handleExecuteCommand = (cmdStr?: string) => {
+  const handleExecuteCommand = async (cmdStr?: string) => {
     const rawCmd = (cmdStr || commandInput).trim();
     if (!rawCmd) return;
 
-    // Match ;username +|- amount or username +|- amount (e.g. ;woojin -5000000 or ;woojin - 5000000)
-    const match = rawCmd.match(/^;?\s*([^\s]+)\s+([+-]?)\s*([0-9,]+)$/);
-    if (!match) {
-      showNotice('⚠️ 올바른 명령어 형식이 아닙니다. 예시: ;woojin 5000000 또는 ;woojin -1000000');
-      return;
-    }
+    // Call server admin grant API
+    const res = await executeAdminCashGrantAsync(rawCmd);
 
-    const inputTarget = match[1].toLowerCase().replace('@', '');
-    const isNegative = match[2] === '-';
-    const rawNum = parseInt(match[3].replace(/,/g, ''), 10);
+    if (res.success) {
+      showNotice(`🎉 ${res.message}`);
+      setCommandInput('');
+      
+      if (res.users) {
+        setUserList(res.users);
+      } else {
+        const updated = await fetchRegisteredUsersAsync();
+        setUserList(updated);
+      }
 
-    if (isNaN(rawNum) || rawNum <= 0) {
-      showNotice('⚠️ 올바른 금액 숫자를 입력해 주세요.');
-      return;
-    }
-
-    const deltaAmount = isNegative ? -rawNum : rawNum;
-
-    // Find registered user by username or name
-    const allUsers = getRegisteredUsers();
-    let targetUser = allUsers.find(
-      (u) => u.username.toLowerCase() === inputTarget || u.name.toLowerCase() === inputTarget
-    );
-
-    // If target is current logged-in user or matches current user username
-    if (!targetUser && currentUser && (currentUser.username.toLowerCase() === inputTarget || currentUser.name.toLowerCase() === inputTarget)) {
-      targetUser = currentUser;
-    }
-
-    const targetUsername = targetUser ? targetUser.username.toLowerCase() : inputTarget;
-    const displayName = targetUser ? targetUser.name : targetUsername;
-
-    // 1. If targeting current active user, update live cash state
-    if (currentUser && currentUser.username.toLowerCase() === targetUsername) {
-      setCash((prev) => Math.max(0, prev + deltaAmount));
-    }
-
-    // 2. Update persistent user state in localStorage
-    const userStateKey = `stock_game_user_state_${targetUsername}`;
-    const savedStateStr = localStorage.getItem(userStateKey);
-
-    if (savedStateStr) {
-      try {
-        const parsed = JSON.parse(savedStateStr);
-        parsed.cash = Math.max(0, (parsed.cash || 0) + deltaAmount);
-        localStorage.setItem(userStateKey, JSON.stringify(parsed));
-      } catch (e) {
-        console.error('Failed to parse user state', e);
+      // If current active user received money, update setCash
+      if (
+        currentUser &&
+        res.targetUsername &&
+        currentUser.username.toLowerCase() === res.targetUsername.toLowerCase() &&
+        typeof res.newCash === 'number'
+      ) {
+        setCash(res.newCash);
       }
     } else {
-      // Create initial state for user if state record doesn't exist yet
-      // Default starting cash is 1,000,000 KRW
-      const initialBaseCash = 1000000;
-      const newCash = Math.max(0, initialBaseCash + deltaAmount);
-      const newState = {
-        cash: newCash,
-        portfolio: [],
-        savings: 0,
-        loan: 0,
-        day: 1,
-        autoSellOrders: [],
-        highScore: newCash,
-        goalCelebrated: false,
-        transactions: []
-      };
-      localStorage.setItem(userStateKey, JSON.stringify(newState));
+      showNotice(`⚠️ ${res.message}`);
     }
-
-    if (isNegative) {
-      showNotice(`💸 @${displayName}(${targetUsername}) 계정에서 ${rawNum.toLocaleString('ko-KR')}원이 차감되었습니다.`);
-    } else {
-      showNotice(`🎉 @${displayName}(${targetUsername}) 계정에 ${rawNum.toLocaleString('ko-KR')}원이 성공적으로 지급되었습니다!`);
-    }
-    setCommandInput('');
   };
 
   // Add cash handler
@@ -491,84 +453,89 @@ export default function AdminModal({
             </div>
 
             {/* Section 4: Registered Users Info */}
-            <div className="bg-slate-50 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                <div className="flex items-center gap-1.5">
-                  <Users size={15} className="text-amber-500" />
-                  <span>등록된 회원 목록 ({registeredUsers.length}명)</span>
-                </div>
-                <span className="text-[10px] text-slate-400 font-normal">버튼 클릭 시 해당 계정 자산 즉시 변경</span>
-              </div>
-              {registeredUsers.length === 0 ? (
-                <p className="text-[11px] text-slate-400">등록된 회원이 없습니다.</p>
-              ) : (
-                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
-                  {registeredUsers.map((u, idx) => {
-                    const uStateKey = `stock_game_user_state_${u.username.toLowerCase()}`;
-                    const savedStr = localStorage.getItem(uStateKey);
-                    let userCash = 1000000;
-                    if (currentUser && currentUser.username.toLowerCase() === u.username.toLowerCase()) {
-                      userCash = cash;
-                    } else if (savedStr) {
-                      try {
-                        const parsed = JSON.parse(savedStr);
-                        userCash = parsed.cash ?? 1000000;
-                      } catch (e) {}
-                    }
+            {(() => {
+              const displayUsers = userList.length > 0 ? userList : getRegisteredUsers();
+              return (
+                <div className="bg-slate-50 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <div className="flex items-center gap-1.5">
+                      <Users size={15} className="text-amber-500" />
+                      <span>등록된 회원 목록 ({displayUsers.length}명)</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-normal">버튼 클릭 시 해당 계정 자산 즉시 변경</span>
+                  </div>
+                  {displayUsers.length === 0 ? (
+                    <p className="text-[11px] text-slate-400">등록된 회원이 없습니다.</p>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                      {displayUsers.map((u, idx) => {
+                        const uStateKey = `stock_game_user_state_${u.username.toLowerCase()}`;
+                        const savedStr = localStorage.getItem(uStateKey);
+                        let userCash = 1000000;
+                        if (currentUser && currentUser.username.toLowerCase() === u.username.toLowerCase()) {
+                          userCash = cash;
+                        } else if (savedStr) {
+                          try {
+                            const parsed = JSON.parse(savedStr);
+                            userCash = parsed.cash ?? 1000000;
+                          } catch (e) {}
+                        }
 
-                    return (
-                      <div
-                        key={idx}
-                        className="p-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{u.name}</span>
-                            <span className="text-slate-400 font-mono text-[10px]">@{u.username}</span>
-                            {u.username.toLowerCase() === 'woojin' && (
-                              <span className="bg-amber-100 dark:bg-amber-955 text-amber-800 dark:text-amber-300 font-bold px-1 rounded text-[9px]">
-                                어드민
+                        return (
+                          <div
+                            key={idx}
+                            className="p-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-slate-800 dark:text-slate-200">{u.name}</span>
+                                <span className="text-slate-400 font-mono text-[10px]">@{u.username}</span>
+                                {u.username.toLowerCase() === 'woojin' && (
+                                  <span className="bg-amber-100 dark:bg-amber-955 text-amber-800 dark:text-amber-300 font-bold px-1 rounded text-[9px]">
+                                    어드민
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] bg-emerald-50 dark:bg-emerald-955/50 px-1.5 py-0.5 rounded">
+                                {userCash.toLocaleString('ko-KR')}원
                               </span>
-                            )}
-                          </div>
-                          <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[10px] bg-emerald-50 dark:bg-emerald-955/50 px-1.5 py-0.5 rounded">
-                            {userCash.toLocaleString('ko-KR')}원
-                          </span>
-                        </div>
+                            </div>
 
-                        {/* Quick action buttons for this user */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleExecuteCommand(`;${u.username} 1000000`)}
-                            className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded cursor-pointer transition-colors"
-                            title="100만원 지급"
-                          >
-                            +100만
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleExecuteCommand(`;${u.username} 5000000`)}
-                            className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded cursor-pointer transition-colors"
-                            title="500만원 지급"
-                          >
-                            +500만
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleExecuteCommand(`;${u.username} -1000000`)}
-                            className="px-1.5 py-0.5 text-[9px] font-bold bg-rose-600 hover:bg-rose-700 text-white rounded cursor-pointer transition-colors"
-                            title="100만원 차감"
-                          >
-                            -100만
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                            {/* Quick action buttons for this user */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleExecuteCommand(`;${u.username} 1000000`)}
+                                className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded cursor-pointer transition-colors"
+                                title="100만원 지급"
+                              >
+                                +100만
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleExecuteCommand(`;${u.username} 5000000`)}
+                                className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded cursor-pointer transition-colors"
+                                title="500만원 지급"
+                              >
+                                +500만
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleExecuteCommand(`;${u.username} -1000000`)}
+                                className="px-1.5 py-0.5 text-[9px] font-bold bg-rose-600 hover:bg-rose-700 text-white rounded cursor-pointer transition-colors"
+                                title="100만원 차감"
+                              >
+                                -100만
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         )}
       </div>
