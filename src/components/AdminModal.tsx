@@ -42,29 +42,32 @@ export default function AdminModal({
     setTimeout(() => setNotice(null), 3000);
   };
 
-  // Command parser for format: ;(아이디) (금액) -> e.g. ;woojin 5000000
+  // Command parser for format: ;(아이디) (금액) or ;(아이디) -(금액) -> e.g. ;woojin 5000000 or ;woojin -1000000
   const handleExecuteCommand = (cmdStr?: string) => {
     const rawCmd = (cmdStr || commandInput).trim();
     if (!rawCmd) return;
 
-    // Match ;username amount or username amount
-    const match = rawCmd.match(/^;?\s*([^\s]+)\s+([0-9]+)$/);
+    // Match ;username +|- amount or username +|- amount (e.g. ;woojin -5000000 or ;woojin - 5000000)
+    const match = rawCmd.match(/^;?\s*([^\s]+)\s+([+-]?)\s*([0-9,]+)$/);
     if (!match) {
-      showNotice('⚠️ 올바른 명령어 형식이 아닙니다. 예시: ;woojin 5000000');
+      showNotice('⚠️ 올바른 명령어 형식이 아닙니다. 예시: ;woojin 5000000 또는 ;woojin -1000000');
       return;
     }
 
     const targetUsername = match[1].toLowerCase().replace('@', '');
-    const amount = parseInt(match[2], 10);
+    const isNegative = match[2] === '-';
+    const rawNum = parseInt(match[3].replace(/,/g, ''), 10);
 
-    if (isNaN(amount) || amount <= 0) {
-      showNotice('⚠️ 지급할 금액은 0보다 큰 숫자여야 합니다.');
+    if (isNaN(rawNum) || rawNum <= 0) {
+      showNotice('⚠️ 올바른 금액 숫자를 입력해 주세요.');
       return;
     }
 
+    const deltaAmount = isNegative ? -rawNum : rawNum;
+
     // 1. If targeting current active user, update live cash state
     if (currentUser && currentUser.username.toLowerCase() === targetUsername) {
-      setCash((prev) => prev + amount);
+      setCash((prev) => Math.max(0, prev + deltaAmount));
     }
 
     // 2. Update persistent user state in localStorage
@@ -73,18 +76,23 @@ export default function AdminModal({
     if (savedStateStr) {
       try {
         const parsed = JSON.parse(savedStateStr);
-        parsed.cash = (parsed.cash || 0) + amount;
+        parsed.cash = Math.max(0, (parsed.cash || 0) + deltaAmount);
         localStorage.setItem(userStateKey, JSON.stringify(parsed));
       } catch (e) {
         console.error('Failed to parse user state', e);
       }
     } else if (currentUser && currentUser.username.toLowerCase() === targetUsername) {
       // Create initial state for user if missing
-      const newState = { cash: cash + amount, portfolio: [], savings: 0, loan: 0, day: 1 };
+      const newCash = Math.max(0, cash + deltaAmount);
+      const newState = { cash: newCash, portfolio: [], savings: 0, loan: 0, day: 1 };
       localStorage.setItem(userStateKey, JSON.stringify(newState));
     }
 
-    showNotice(`🎉 @${targetUsername} 계정에 ${amount.toLocaleString('ko-KR')}원이 성공적으로 지급되었습니다!`);
+    if (isNegative) {
+      showNotice(`💸 @${targetUsername} 계정에서 ${rawNum.toLocaleString('ko-KR')}원이 차감되었습니다.`);
+    } else {
+      showNotice(`🎉 @${targetUsername} 계정에 ${rawNum.toLocaleString('ko-KR')}원이 성공적으로 지급되었습니다!`);
+    }
     setCommandInput('');
   };
 
@@ -263,7 +271,7 @@ export default function AdminModal({
                 <span className="text-[10px] text-slate-400">형식: ;(아이디) (금액)</span>
               </div>
               <p className="text-[11px] text-slate-300">
-                명령어를 입력하면 해당 계정에 즉시 지정한 금액이 지급됩니다.
+                명령어를 입력하면 해당 계정에 금액을 즉시 지급(+)하거나 차감(-)합니다.
               </p>
               <form
                 onSubmit={(e) => {
@@ -278,7 +286,7 @@ export default function AdminModal({
                     type="text"
                     value={commandInput}
                     onChange={(e) => setCommandInput(e.target.value)}
-                    placeholder=";woojin 5000000"
+                    placeholder=";woojin 5000000 또는 ;woojin -1000000"
                     className="w-full pl-7 pr-3 py-1.5 text-xs font-mono font-bold bg-slate-950 border border-slate-700 text-amber-300 rounded-lg focus:outline-none focus:border-amber-400 placeholder:text-slate-600"
                     id="admin-cmd-input"
                   />
@@ -290,20 +298,27 @@ export default function AdminModal({
                   실행
                 </button>
               </form>
-              <div className="flex gap-2 pt-1">
+              <div className="flex flex-wrap gap-1.5 pt-1">
                 <button
                   type="button"
                   onClick={() => handleExecuteCommand(';woojin 5000000')}
                   className="px-2 py-0.5 text-[10px] font-mono bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-slate-700 cursor-pointer"
                 >
-                  ;woojin 5000000 (우진 500만)
+                  ;woojin 5000000 (+500만)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExecuteCommand(';woojin -1000000')}
+                  className="px-2 py-0.5 text-[10px] font-mono bg-slate-800 hover:bg-slate-700 text-rose-300 rounded border border-rose-900/60 cursor-pointer"
+                >
+                  ;woojin -1000000 (-100만)
                 </button>
                 <button
                   type="button"
                   onClick={() => handleExecuteCommand(';woojin 100000000')}
                   className="px-2 py-0.5 text-[10px] font-mono bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-slate-700 cursor-pointer"
                 >
-                  ;woojin 100000000 (우진 1억)
+                  ;woojin 100000000 (+1억)
                 </button>
               </div>
             </div>
