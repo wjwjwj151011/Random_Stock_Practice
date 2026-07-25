@@ -381,10 +381,38 @@ export default function AuthModal({ isOpen, onClose, currentUser, onUserChange }
                 ) : (
                   <>
                     <Database size={13} />
-                    {mode === 'LOGIN' ? 'Supabase 로그인' : 'Supabase 회원가입'}
+                    {mode === 'LOGIN' ? '로그인' : '회원가입'}
                   </>
                 )}
               </button>
+
+              {mode === 'LOGIN' && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setUsername('woojin');
+                    setPassword('admin1234');
+                    setLoading(true);
+                    const res = await loginUserAsync('woojin', 'admin1234');
+                    setLoading(false);
+                    if (res.success && res.user) {
+                      setSuccess(res.message);
+                      onUserChange(res.user);
+                      setTimeout(() => {
+                        onClose();
+                        resetForm();
+                      }, 1000);
+                    } else if (res.message) {
+                      setError(res.message);
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full py-2 rounded-xl font-extrabold text-xs text-amber-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 transition-all border border-amber-300 dark:border-amber-600 shadow-sm cursor-pointer mt-2 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  id="btn-quick-admin-login"
+                >
+                  👑 @woojin 어드민 계정으로 빠른 로그인
+                </button>
+              )}
             </form>
           </div>
         )}

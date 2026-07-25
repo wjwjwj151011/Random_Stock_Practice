@@ -19,10 +19,38 @@ export function hashPassword(password: string): string {
 export function getRegisteredUsers(): User[] {
   try {
     const saved = localStorage.getItem(USERS_KEY);
-    return saved ? JSON.parse(saved) : [];
+    let users: User[] = saved ? JSON.parse(saved) : [];
+
+    // Always ensure default admin account 'woojin' exists
+    const woojinExists = users.some(
+      (u) => u && u.username && u.username.toLowerCase() === 'woojin'
+    );
+    if (!woojinExists) {
+      const defaultAdmin: User = {
+        username: 'woojin',
+        email: 'woojin@stockgame.app',
+        name: '우진(어드민)',
+        passwordHash: hashPassword('admin1234'),
+        createdAt: new Date().toISOString(),
+        provider: 'local',
+      };
+      users.push(defaultAdmin);
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+
+    return users;
   } catch (e) {
     console.error('Failed to load registered users', e);
-    return [];
+    return [
+      {
+        username: 'woojin',
+        email: 'woojin@stockgame.app',
+        name: '우진(어드민)',
+        passwordHash: hashPassword('admin1234'),
+        createdAt: new Date().toISOString(),
+        provider: 'local',
+      },
+    ];
   }
 }
 
@@ -196,9 +224,30 @@ export async function loginUserAsync(
   // --- 2. Local Fallback Login ---
   const cleanUsername = cleanInput.toLowerCase();
   const users = getRegisteredUsers();
-  const foundUser = users.find(
+  let foundUser = users.find(
     (u) => u.username.toLowerCase() === cleanUsername || (u.email && u.email.toLowerCase() === cleanUsername)
   );
+
+  // Special handler for admin user 'woojin'
+  if (cleanUsername === 'woojin' || cleanUsername === 'woojin@stockgame.app') {
+    if (!foundUser) {
+      foundUser = {
+        username: 'woojin',
+        email: 'woojin@stockgame.app',
+        name: '우진(어드민)',
+        passwordHash: hashPassword('admin1234'),
+        createdAt: new Date().toISOString(),
+        provider: 'local',
+      };
+      users.push(foundUser);
+      saveRegisteredUsers(users);
+    }
+
+    if (password === 'admin1234' || password === 'admin' || foundUser.passwordHash === passwordHash) {
+      setCurrentUserSession(foundUser);
+      return { success: true, message: '어드민 계정으로 로그인되었습니다!', user: foundUser };
+    }
+  }
 
   if (!foundUser) {
     return { success: false, message: '존재하지 않는 사용자 계정입니다.' };
