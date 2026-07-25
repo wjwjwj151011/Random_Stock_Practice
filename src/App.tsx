@@ -188,8 +188,12 @@ export default function App() {
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.backgroundColor = '#020617';
+      document.body.style.backgroundColor = '#020617';
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.style.backgroundColor = '#f8fafc';
+      document.body.style.backgroundColor = '#f8fafc';
     }
     localStorage.setItem('stock_game_dark_mode', darkMode.toString());
   }, [darkMode]);
@@ -844,7 +848,7 @@ export default function App() {
             <div className="flex gap-3" id="celebration-buttons">
               <button
                 onClick={() => setShowGoalModal(false)}
-                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-xl text-xs font-bold transition-colors shadow-sm"
+                className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white dark:text-slate-100 border border-transparent dark:border-slate-700 rounded-xl text-xs font-bold transition-colors shadow-sm"
               >
                 계속 투자하기
               </button>

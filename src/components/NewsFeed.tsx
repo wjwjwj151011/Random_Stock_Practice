@@ -90,7 +90,7 @@ export default function NewsFeed({ news, stocks, onSelectStock, onMarkAllAsRead 
                 onClick={() => setViewMode('CARD')}
                 className={`px-1.5 py-0.5 rounded-md transition-all cursor-pointer ${
                   viewMode === 'CARD'
-                    ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xs'
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs dark:border dark:border-slate-700'
                     : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                 }`}
               >
@@ -100,7 +100,7 @@ export default function NewsFeed({ news, stocks, onSelectStock, onMarkAllAsRead 
                 onClick={() => setViewMode('LIST')}
                 className={`px-1.5 py-0.5 rounded-md transition-all cursor-pointer ${
                   viewMode === 'LIST'
-                    ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xs'
+                    ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs dark:border dark:border-slate-700'
                     : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
                 }`}
               >
@@ -122,7 +122,7 @@ export default function NewsFeed({ news, stocks, onSelectStock, onMarkAllAsRead 
             onClick={() => setFilter('ALL')}
             className={`flex-1 py-0.5 text-[9px] font-bold rounded-lg transition-all cursor-pointer ${
               filter === 'ALL'
-                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xs'
+                ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs dark:border dark:border-slate-700'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
@@ -132,7 +132,7 @@ export default function NewsFeed({ news, stocks, onSelectStock, onMarkAllAsRead 
             onClick={() => setFilter('STOCK')}
             className={`flex-1 py-0.5 text-[9px] font-bold rounded-lg transition-all cursor-pointer ${
               filter === 'STOCK'
-                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xs'
+                ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs dark:border dark:border-slate-700'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >
@@ -142,7 +142,7 @@ export default function NewsFeed({ news, stocks, onSelectStock, onMarkAllAsRead 
             onClick={() => setFilter('GLOBAL')}
             className={`flex-1 py-0.5 text-[9px] font-bold rounded-lg transition-all cursor-pointer ${
               filter === 'GLOBAL'
-                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-xs'
+                ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-xs dark:border dark:border-slate-700'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}
           >

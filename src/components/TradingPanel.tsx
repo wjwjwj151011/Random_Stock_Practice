@@ -430,10 +430,10 @@ export default function TradingPanel({
             <button
               type="submit"
               disabled={heldShares <= 0}
-              className={`w-full py-1 rounded-md font-bold text-[10px] tracking-wide text-white transition-all duration-200 shadow-xs flex items-center justify-center gap-1 cursor-pointer ${
+              className={`w-full py-1 rounded-md font-bold text-[10px] tracking-wide transition-all duration-200 shadow-xs flex items-center justify-center gap-1 cursor-pointer ${
                 heldShares <= 0
-                  ? 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed text-slate-500 shadow-none'
-                  : 'bg-slate-800 dark:bg-slate-200 hover:bg-slate-900 dark:hover:bg-white text-white dark:text-slate-900'
+                  ? 'bg-slate-300 dark:bg-slate-800/60 cursor-not-allowed text-slate-500 shadow-none'
+                  : 'bg-slate-800 dark:bg-slate-800 hover:bg-slate-900 dark:hover:bg-slate-700 text-white dark:text-slate-100 border border-transparent dark:border-slate-700'
               }`}
             >
               ⚙️ 자동 판매(매도) 예약 등록

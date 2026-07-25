@@ -152,7 +152,7 @@ export default function BankPanel({
         </div>
         <button
           onClick={onReturnToTrading}
-          className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer flex items-center gap-1"
+          className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white dark:text-slate-100 border border-transparent dark:border-slate-700 font-bold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer flex items-center gap-1"
           id="btn-return-trading"
         >
           📈 거래소 가기

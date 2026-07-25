@@ -91,7 +91,7 @@ export default function StockList({ stocks, portfolio, selectedStockId, onSelect
                 onClick={() => setActiveCategory(cat)}
                 className={`px-2 py-0.5 text-[9px] font-bold rounded-md whitespace-nowrap transition-all duration-150 cursor-pointer ${
                   isCatActive
-                    ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950 shadow-xs'
+                    ? 'bg-slate-900 dark:bg-slate-800 text-white dark:text-slate-100 dark:border dark:border-slate-700 shadow-xs'
                     : 'bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >

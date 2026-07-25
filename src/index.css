@@ -1,3 +1,25 @@
 @import "tailwindcss";
 
 @variant dark (&:where(.dark, .dark *));
+
+html, body, #root {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.dark, html.dark body, html.dark #root {
+  background-color: #020617;
+  color: #f8fafc;
+  color-scheme: dark;
+}
+
+html:not(.dark), html:not(.dark) body, html:not(.dark) #root {
+  background-color: #f8fafc;
+  color: #0f172a;
+  color-scheme: light;
+}
