@@ -56,6 +56,7 @@ export default function App() {
   const [stocks, setStocks] = useState<Stock[]>(() => {
     // Attempt load from localStorage or fall back to INITIAL_STOCKS
     const saved = localStorage.getItem('stock_game_stocks');
+    let loadedStocks: Stock[] = INITIAL_STOCKS;
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Stock[];
@@ -63,14 +64,29 @@ export default function App() {
         if (parsed.length < INITIAL_STOCKS.length) {
           const parsedIds = new Set(parsed.map((s) => s.id));
           const newStocks = INITIAL_STOCKS.filter((s) => !parsedIds.has(s.id));
-          return [...parsed, ...newStocks];
+          loadedStocks = [...parsed, ...newStocks];
+        } else {
+          loadedStocks = parsed;
         }
-        return parsed;
       } catch (e) {
-        return INITIAL_STOCKS;
+        loadedStocks = INITIAL_STOCKS;
       }
     }
-    return INITIAL_STOCKS;
+
+    // Sanitize prices to conform to minPrice/maxPrice updated bounds
+    return loadedStocks.map((stock) => {
+      const initialRef = INITIAL_STOCKS.find((s) => s.id === stock.id);
+      const minP = initialRef?.minPrice ?? stock.minPrice ?? 30;
+      const maxP = initialRef?.maxPrice ?? stock.maxPrice ?? 100000;
+      const sanitizedPrice = Math.max(minP, Math.min(maxP, stock.price));
+      return {
+        ...stock,
+        minPrice: minP,
+        maxPrice: maxP,
+        price: sanitizedPrice,
+        prevPrice: stock.prevPrice < minP ? sanitizedPrice : stock.prevPrice
+      };
+    });
   });
 
   const [selectedStockId, setSelectedStockId] = useState<string>('titan-tech');

@@ -64,11 +64,11 @@ export const INITIAL_STOCKS: Stock[] = [
     price: 500,
     prevPrice: 500,
     history: Array.from({ length: 20 }, (_, i) => 400 + Math.random() * 200),
-    volatility: 0.12, // 12% volatility (extreme gamble)
-    drift: -0.005, // Sinks rapidly over time, punctuated by massive random jumps
-    minPrice: 1,
+    volatility: 0.15, // 15% volatility (extreme gamble)
+    drift: -0.001, // Gradual drift with high volatility and sudden pumps
+    minPrice: 30,
     maxPrice: 100000,
-    description: '인터넷 밈에서 탄생한 가상자산입니다. 종잡을 수 없는 급등락을 보입니다.',
+    description: '인터넷 밈에서 탄생한 가상자산입니다. 종잡을 수 없는 급등락과 뜬금없는 떡상을 보입니다.',
     category: 'Crypto'
   },
   {
@@ -491,10 +491,27 @@ export function generateRandomNews(stocks: Stock[]): NewsItem {
 export function calculateNextPrice(stock: Stock, marketSentiment: number = 0): number {
   // Simple random walk with trend and noise
   const randomFactor = (Math.random() * 2 - 1); // Random float in [-1, 1]
-  // Slightly adjust random walks using individual volatility and drift
-  // marketSentiment can push prices up/down globally
   const multiplier = 1 + stock.drift + (stock.volatility * randomFactor) + marketSentiment;
   let nextPrice = Math.round(stock.price * multiplier);
+
+  // Fix Rounding Trap for low price stocks (e.g., price <= 100)
+  // When price * volatility < 0.5, Math.round() results in 0 change, locking the price at 3 or 4 KRW.
+  if (nextPrice === stock.price && stock.price > stock.minPrice) {
+    if (randomFactor > 0.2) {
+      nextPrice = stock.price + 1;
+    } else if (randomFactor < -0.2 && stock.price > stock.minPrice + 1) {
+      nextPrice = stock.price - 1;
+    }
+  }
+
+  // Dog coin (meme coin) special volatility boost / bottom bounce
+  if (stock.id === 'dog-coin') {
+    // If dog coin is low (under 100 KRW), give a 20% chance of a sudden meme pump!
+    if (stock.price <= 100 && Math.random() < 0.20) {
+      const pumpMultiplier = 1.3 + Math.random() * 1.5; // +30% ~ +180% surge
+      nextPrice = Math.round(stock.price * pumpMultiplier);
+    }
+  }
 
   // Bounds checking
   if (nextPrice < stock.minPrice) nextPrice = stock.minPrice;
