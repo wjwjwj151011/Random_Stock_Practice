@@ -37,7 +37,7 @@ export async function fetchRegisteredUsersAsync(): Promise<User[]> {
     const res = await fetch('/api/users');
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data.users)) {
+      if (data && Array.isArray(data.users)) {
         saveRegisteredUsers(data.users);
         return data.users;
       }
@@ -104,10 +104,9 @@ export async function registerUserAsync(
     });
 
     const data = await res.json();
-    if (res.ok && data.success && data.user) {
+    if (data && data.success && data.user) {
       const newUser: User = data.user;
 
-      // Update local storage user list
       const users = getRegisteredUsers();
       if (!users.some((u) => u.username.toLowerCase() === newUser.username.toLowerCase())) {
         users.push(newUser);
@@ -116,7 +115,7 @@ export async function registerUserAsync(
 
       setCurrentUserSession(newUser);
       return { success: true, message: '회원가입이 완료되었습니다!', user: newUser };
-    } else if (data.message) {
+    } else if (data && data.message) {
       return { success: false, message: data.message };
     }
   } catch (err) {
@@ -167,16 +166,15 @@ export async function loginUserAsync(
     });
 
     const data = await res.json();
-    if (res.ok && data.success && data.user) {
+    if (data && data.success && data.user) {
       const userObj: User = data.user;
       setCurrentUserSession(userObj);
 
-      // Refresh registered users
       fetchRegisteredUsersAsync().catch(() => {});
 
       return { success: true, message: '로그인되었습니다!', user: userObj };
-    } else if (res.status === 401 || res.status === 404) {
-      return { success: false, message: data.message || '로그인에 실패했습니다.' };
+    } else if (data && data.message) {
+      return { success: false, message: data.message };
     }
   } catch (e) {
     console.warn('Server login failed, trying local fallback', e);
@@ -209,23 +207,19 @@ export async function logoutUserAsync(): Promise<void> {
 // Async Delete Account
 export async function deleteAccountAsync(user: User): Promise<{ success: boolean; message: string }> {
   try {
-    // 1. Call server API
     await fetch('/api/admin/delete-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: user.username }),
     }).catch(() => {});
 
-    // 2. Delete user game state locally
     const stateKey = getUserStateKey(user.username);
     localStorage.removeItem(stateKey);
 
-    // 3. Remove user from local storage user list
     const users = getRegisteredUsers();
     const filteredUsers = users.filter((u) => u.username.toLowerCase() !== user.username.toLowerCase());
     saveRegisteredUsers(filteredUsers);
 
-    // 4. Clear current session
     setCurrentUserSession(null);
 
     return { success: true, message: '계정이 성공적으로 삭제되었습니다.' };
@@ -255,7 +249,7 @@ export async function loadUserGameStateAsync(username: string): Promise<UserGame
     const res = await fetch(`/api/user-state/${encodeURIComponent(username)}`);
     if (res.ok) {
       const data = await res.json();
-      if (data.success && data.state) {
+      if (data && data.success && data.state) {
         saveUserGameState(username, data.state);
         return data.state;
       }
@@ -271,7 +265,6 @@ export function saveUserGameState(username: string, state: UserGameState): void 
     const key = getUserStateKey(username);
     localStorage.setItem(key, JSON.stringify(state));
 
-    // Async push to server
     fetch(`/api/user-state/${encodeURIComponent(username)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -287,6 +280,7 @@ export async function executeAdminCashGrantAsync(
   commandOrTarget: string,
   amount?: number
 ): Promise<{ success: boolean; message: string; users?: User[]; targetUsername?: string; newCash?: number }> {
+  // 1. Try server endpoint first
   try {
     const payload = typeof amount === 'number'
       ? { target: commandOrTarget, amount }
@@ -299,7 +293,7 @@ export async function executeAdminCashGrantAsync(
     });
 
     const data = await res.json();
-    if (res.ok && data.success) {
+    if (data && data.success) {
       if (Array.isArray(data.users)) {
         saveRegisteredUsers(data.users);
       }
@@ -310,10 +304,101 @@ export async function executeAdminCashGrantAsync(
         targetUsername: data.targetUsername,
         newCash: data.newCash,
       };
-    } else {
-      return { success: false, message: data.message || '명령어 실행에 실패했습니다.' };
+    } else if (data && data.message) {
+      return { success: false, message: data.message };
     }
   } catch (e) {
-    return { success: false, message: '서버와의 통신 오류가 발생했습니다.' };
+    console.warn('Server admin grant failed, proceeding with client-side fallback', e);
   }
+
+  // 2. Client-side fallback handler
+  let targetInput = '';
+  let deltaAmount = 0;
+
+  if (typeof amount === 'number') {
+    targetInput = commandOrTarget.trim().toLowerCase().replace(/^@/, '');
+    deltaAmount = amount;
+  } else {
+    const trimmed = commandOrTarget.trim();
+    const match = trimmed.match(/^;?\s*@?([^\s]+)\s+([+-]?)\s*([0-9,]+)$/);
+    if (!match) {
+      return {
+        success: false,
+        message: '명령어 형식이 올바르지 않습니다. 예: ;wjwjwj 100000000000000 또는 ;woojin 5000000',
+      };
+    }
+    targetInput = match[1].trim().toLowerCase().replace(/^@/, '');
+    const isNegative = match[2] === '-';
+    const rawNum = parseInt(match[3].replace(/,/g, ''), 10);
+    if (isNaN(rawNum) || rawNum <= 0) {
+      return { success: false, message: '올바른 금액 숫자를 입력해 주세요.' };
+    }
+    deltaAmount = isNegative ? -rawNum : rawNum;
+  }
+
+  // Find or create user in local storage
+  const users = getRegisteredUsers();
+  let foundUser = users.find(
+    (u) => u.username.toLowerCase() === targetInput || u.name.toLowerCase() === targetInput
+  );
+
+  const targetUsername = foundUser ? foundUser.username.toLowerCase() : targetInput;
+  const targetName = foundUser ? foundUser.name : targetUsername;
+
+  if (!foundUser) {
+    foundUser = {
+      username: targetUsername,
+      name: targetName,
+      passwordHash: 'local_admin',
+      createdAt: new Date().toISOString(),
+      provider: 'local',
+    };
+    users.push(foundUser);
+    saveRegisteredUsers(users);
+  }
+
+  // Update user state in localStorage
+  const stateKey = getUserStateKey(targetUsername);
+  const savedStateStr = localStorage.getItem(stateKey);
+  let currentState: UserGameState = {
+    cash: 1000000,
+    portfolio: [],
+    savings: 0,
+    loan: 0,
+    day: 1,
+    autoSellOrders: [],
+    highScore: 1000000,
+    goalCelebrated: false,
+    transactions: [],
+    stats: {
+      totalTrades: 0,
+      winningTrades: 0,
+      highestPortfolioValue: 1000000,
+      biggestGainPercent: 0,
+    },
+  };
+
+  if (savedStateStr) {
+    try {
+      currentState = { ...currentState, ...JSON.parse(savedStateStr) };
+    } catch (e) {}
+  }
+
+  const currentCash = typeof currentState.cash === 'number' ? currentState.cash : 1000000;
+  const newCash = Math.max(0, currentCash + deltaAmount);
+  currentState.cash = newCash;
+  currentState.highScore = Math.max(currentState.highScore || 0, newCash);
+
+  localStorage.setItem(stateKey, JSON.stringify(currentState));
+
+  const absAmount = Math.abs(deltaAmount);
+  const actionText = deltaAmount < 0 ? '차감되었습니다' : '성공적으로 지급되었습니다!';
+
+  return {
+    success: true,
+    message: `@${targetName}(${targetUsername}) 계정에 ${absAmount.toLocaleString('ko-KR')}원이 ${actionText}`,
+    users,
+    targetUsername,
+    newCash,
+  };
 }

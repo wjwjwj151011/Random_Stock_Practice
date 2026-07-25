@@ -27,27 +27,33 @@ interface DBStructure {
 
 // Ensure data directory and db.json exist
 function ensureDB(): DBStructure {
-  const dir = path.dirname(DB_FILE);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
   let db: DBStructure = { users: [], userStates: {} };
 
-  if (fs.existsSync(DB_FILE)) {
-    try {
+  try {
+    const dir = path.dirname(DB_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, "utf-8");
       if (content.trim()) {
-        db = JSON.parse(content);
+        const parsed = JSON.parse(content);
+        if (parsed && typeof parsed === "object") {
+          db = {
+            users: Array.isArray(parsed.users) ? parsed.users : [],
+            userStates: parsed.userStates && typeof parsed.userStates === "object" ? parsed.userStates : {},
+          };
+        }
       }
-    } catch (e) {
-      console.error("Error reading db.json, re-initializing", e);
     }
+  } catch (e) {
+    console.error("Error reading or parsing db.json, using fallback empty DB", e);
   }
 
   // Ensure default admin user 'woojin' exists if not present
   const woojinExists = db.users.some(
-    (u) => u.username.toLowerCase() === "woojin"
+    (u) => u && u.username && u.username.toLowerCase() === "woojin"
   );
   if (!woojinExists) {
     db.users.push({
@@ -58,7 +64,6 @@ function ensureDB(): DBStructure {
       createdAt: new Date().toISOString(),
       provider: "local",
     });
-    // Default woojin state
     if (!db.userStates["woojin"]) {
       db.userStates["woojin"] = {
         cash: 10000000,
@@ -72,7 +77,7 @@ function ensureDB(): DBStructure {
         transactions: [],
       };
     }
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+    saveDB(db);
   }
 
   return db;
@@ -90,43 +95,207 @@ function saveDB(db: DBStructure): void {
   }
 }
 
+// Helper to parse admin command string
+function parseAdminCmd(cmdStr: string) {
+  const trimmed = cmdStr.trim();
+  // Match optional semicolon/at, target username or nickname, optional sign (+ or -), numbers with optional commas
+  const match = trimmed.match(/^;?\s*@?([^\s]+)\s+([+-]?)\s*([0-9,]+)$/);
+  if (!match) return null;
+
+  const targetStr = match[1].trim().toLowerCase().replace(/^@/, '');
+  const isNegative = match[2] === '-';
+  const rawNum = parseInt(match[3].replace(/,/g, ''), 10);
+
+  if (isNaN(rawNum) || rawNum <= 0) return null;
+
+  return {
+    targetStr,
+    deltaAmount: isNegative ? -rawNum : rawNum,
+    absAmount: rawNum,
+    isNegative,
+  };
+}
+
 // --- API ROUTES ---
 
 // 1. Get all registered users
 app.get("/api/users", (req, res) => {
-  const db = ensureDB();
-  res.json({ users: db.users });
+  try {
+    const db = ensureDB();
+    res.json({ success: true, users: db.users });
+  } catch (err: any) {
+    res.json({ success: false, users: [], message: err?.message || "서버 오류" });
+  }
 });
 
 // 2. Register user
 app.post("/api/register", (req, res) => {
-  const { username, email, name, passwordHash, provider } = req.body || {};
-  if (!username || !name) {
-    return res.status(400).json({ success: false, message: "잘못된 요청입니다." });
+  try {
+    const { username, email, name, passwordHash, provider } = req.body || {};
+    if (!username || !name) {
+      return res.json({ success: false, message: "잘못된 요청입니다." });
+    }
+
+    const db = ensureDB();
+    const lowerUsername = username.toLowerCase();
+
+    const existing = db.users.find((u) => u.username.toLowerCase() === lowerUsername);
+    if (existing) {
+      return res.json({ success: false, message: "이미 존재하는 아이디입니다." });
+    }
+
+    const newUser: UserData = {
+      username: lowerUsername,
+      email,
+      name,
+      passwordHash: passwordHash || "default_hash",
+      createdAt: new Date().toISOString(),
+      provider: provider || "local",
+    };
+
+    db.users.push(newUser);
+
+    if (!db.userStates[lowerUsername]) {
+      db.userStates[lowerUsername] = {
+        cash: 1000000,
+        portfolio: [],
+        savings: 0,
+        loan: 0,
+        day: 1,
+        autoSellOrders: [],
+        highScore: 1000000,
+        goalCelebrated: false,
+        transactions: [],
+      };
+    }
+
+    saveDB(db);
+    res.json({ success: true, user: newUser });
+  } catch (err: any) {
+    res.json({ success: false, message: err?.message || "회원가입 처리 중 오류 발생" });
   }
+});
 
-  const db = ensureDB();
-  const lowerUsername = username.toLowerCase();
+// 3. Login user check
+app.post("/api/login", (req, res) => {
+  try {
+    const { emailOrUsername, passwordHash } = req.body || {};
+    if (!emailOrUsername) {
+      return res.json({ success: false, message: "아이디를 입력해주세요." });
+    }
 
-  const existing = db.users.find((u) => u.username.toLowerCase() === lowerUsername);
-  if (existing) {
-    return res.status(400).json({ success: false, message: "이미 존재하는 아이디입니다." });
+    const db = ensureDB();
+    const lowerInput = emailOrUsername.toLowerCase();
+
+    const found = db.users.find(
+      (u) =>
+        u.username.toLowerCase() === lowerInput ||
+        (u.email && u.email.toLowerCase() === lowerInput)
+    );
+
+    if (!found) {
+      return res.json({ success: false, message: "존재하지 않는 계정입니다." });
+    }
+
+    if (passwordHash && found.passwordHash !== passwordHash) {
+      return res.json({ success: false, message: "비밀번호가 일치하지 않습니다." });
+    }
+
+    res.json({ success: true, user: found });
+  } catch (err: any) {
+    res.json({ success: false, message: err?.message || "로그인 처리 중 오류 발생" });
   }
+});
 
-  const newUser: UserData = {
-    username: lowerUsername,
-    email,
-    name,
-    passwordHash,
-    createdAt: new Date().toISOString(),
-    provider: provider || "local",
-  };
+// 4. Get game state for a user
+app.get("/api/user-state/:username", (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase();
+    const db = ensureDB();
+    const state = db.userStates[username] || null;
+    res.json({ success: true, state });
+  } catch (err: any) {
+    res.json({ success: false, state: null });
+  }
+});
 
-  db.users.push(newUser);
+// 5. Save/update game state for a user
+app.post("/api/user-state/:username", (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase();
+    const state = req.body?.state;
 
-  // Initialize state if not present
-  if (!db.userStates[lowerUsername]) {
-    db.userStates[lowerUsername] = {
+    if (!state) {
+      return res.json({ success: false, message: "상태 데이터가 없습니다." });
+    }
+
+    const db = ensureDB();
+    db.userStates[username] = state;
+    saveDB(db);
+
+    res.json({ success: true });
+  } catch (err: any) {
+    res.json({ success: false, message: err?.message || "상태 저장 실패" });
+  }
+});
+
+// 6. Admin Grant / Deduct cash command execution
+app.post("/api/admin/grant-cash", (req, res) => {
+  try {
+    const { command, target, amount } = req.body || {};
+    const db = ensureDB();
+
+    let targetUsername = "";
+    let deltaAmount = 0;
+    let absAmount = 0;
+    let isNegative = false;
+
+    if (command) {
+      const parsedCmd = parseAdminCmd(command);
+      if (!parsedCmd) {
+        return res.json({
+          success: false,
+          message: "명령어 형식이 올바르지 않습니다. 예: ;wjwjwj 100000000000000 또는 ;woojin 5000000",
+        });
+      }
+      
+      const inputTarget = parsedCmd.targetStr;
+      deltaAmount = parsedCmd.deltaAmount;
+      absAmount = parsedCmd.absAmount;
+      isNegative = parsedCmd.isNegative;
+
+      let foundUser = db.users.find(
+        (u) => u.username.toLowerCase() === inputTarget || u.name.toLowerCase() === inputTarget
+      );
+      targetUsername = foundUser ? foundUser.username.toLowerCase() : inputTarget;
+    } else if (target && typeof amount === "number") {
+      const inputTarget = target.toLowerCase().replace(/^@/, "");
+      let foundUser = db.users.find(
+        (u) => u.username.toLowerCase() === inputTarget || u.name.toLowerCase() === inputTarget
+      );
+      targetUsername = foundUser ? foundUser.username.toLowerCase() : inputTarget;
+      deltaAmount = amount;
+      absAmount = Math.abs(amount);
+      isNegative = amount < 0;
+    } else {
+      return res.json({ success: false, message: "잘못된 정보입니다." });
+    }
+
+    // Ensure target user exists in DB user list
+    let userObj = db.users.find((u) => u.username.toLowerCase() === targetUsername);
+    if (!userObj) {
+      userObj = {
+        username: targetUsername,
+        name: targetUsername,
+        passwordHash: "auto_created",
+        createdAt: new Date().toISOString(),
+        provider: "local",
+      };
+      db.users.push(userObj);
+    }
+
+    // Get or initialize state
+    const currentState = db.userStates[targetUsername] || {
       cash: 1000000,
       portfolio: [],
       savings: 0,
@@ -137,162 +306,49 @@ app.post("/api/register", (req, res) => {
       goalCelebrated: false,
       transactions: [],
     };
+
+    const currentCash = typeof currentState.cash === "number" ? currentState.cash : 1000000;
+    const newCash = Math.max(0, currentCash + deltaAmount);
+    currentState.cash = newCash;
+    currentState.highScore = Math.max(currentState.highScore || 0, newCash);
+
+    db.userStates[targetUsername] = currentState;
+    saveDB(db);
+
+    const actionText = isNegative ? "차감되었습니다" : "성공적으로 지급되었습니다!";
+    res.json({
+      success: true,
+      message: `@${userObj.name}(${targetUsername}) 계정에 ${absAmount.toLocaleString("ko-KR")}원이 ${actionText}`,
+      targetUsername,
+      targetName: userObj.name,
+      newCash,
+      deltaAmount,
+      users: db.users,
+    });
+  } catch (err: any) {
+    res.json({ success: false, message: err?.message || "명령어 처리 중 오류 발생" });
   }
-
-  saveDB(db);
-  res.json({ success: true, user: newUser });
-});
-
-// 3. Login user check
-app.post("/api/login", (req, res) => {
-  const { emailOrUsername, passwordHash } = req.body || {};
-  if (!emailOrUsername) {
-    return res.status(400).json({ success: false, message: "아이디를 입력해주세요." });
-  }
-
-  const db = ensureDB();
-  const lowerInput = emailOrUsername.toLowerCase();
-
-  const found = db.users.find(
-    (u) =>
-      u.username.toLowerCase() === lowerInput ||
-      (u.email && u.email.toLowerCase() === lowerInput)
-  );
-
-  if (!found) {
-    return res.status(404).json({ success: false, message: "존재하지 않는 계정입니다." });
-  }
-
-  if (passwordHash && found.passwordHash !== passwordHash) {
-    return res.status(401).json({ success: false, message: "비밀번호가 일치하지 않습니다." });
-  }
-
-  res.json({ success: true, user: found });
-});
-
-// 4. Get game state for a user
-app.get("/api/user-state/:username", (req, res) => {
-  const username = req.params.username.toLowerCase();
-  const db = ensureDB();
-  const state = db.userStates[username] || null;
-  res.json({ success: true, state });
-});
-
-// 5. Save/update game state for a user
-app.post("/api/user-state/:username", (req, res) => {
-  const username = req.params.username.toLowerCase();
-  const state = req.body?.state;
-
-  if (!state) {
-    return res.status(400).json({ success: false, message: "상태 데이터가 없습니다." });
-  }
-
-  const db = ensureDB();
-  db.userStates[username] = state;
-  saveDB(db);
-
-  res.json({ success: true });
-});
-
-// 6. Admin Grant / Deduct cash command execution
-app.post("/api/admin/grant-cash", (req, res) => {
-  const { command, target, amount } = req.body || {};
-  const db = ensureDB();
-
-  let targetUsername = "";
-  let deltaAmount = 0;
-
-  if (command) {
-    const match = command.trim().match(/^;([^\s]+)\s+(-)?(\d[\d,]*)$/);
-    if (!match) {
-      return res.status(400).json({
-        success: false,
-        message: "명령어 형식이 올바르지 않습니다. 예: ;woojin 5000000 또는 ;woojin -1000000",
-      });
-    }
-    const inputTarget = match[1].toLowerCase().replace("@", "");
-    const isNegative = match[2] === "-";
-    const rawNum = parseInt(match[3].replace(/,/g, ""), 10);
-    deltaAmount = isNegative ? -rawNum : rawNum;
-
-    // Find registered user by username or name
-    let foundUser = db.users.find(
-      (u) => u.username.toLowerCase() === inputTarget || u.name.toLowerCase() === inputTarget
-    );
-
-    targetUsername = foundUser ? foundUser.username.toLowerCase() : inputTarget;
-  } else if (target && typeof amount === "number") {
-    const inputTarget = target.toLowerCase().replace("@", "");
-    let foundUser = db.users.find(
-      (u) => u.username.toLowerCase() === inputTarget || u.name.toLowerCase() === inputTarget
-    );
-    targetUsername = foundUser ? foundUser.username.toLowerCase() : inputTarget;
-    deltaAmount = amount;
-  } else {
-    return res.status(400).json({ success: false, message: "잘못된 정보입니다." });
-  }
-
-  // Ensure user exists in users table if not already
-  let userObj = db.users.find((u) => u.username.toLowerCase() === targetUsername);
-  if (!userObj) {
-    userObj = {
-      username: targetUsername,
-      name: targetUsername,
-      passwordHash: "auto_created",
-      createdAt: new Date().toISOString(),
-      provider: "local",
-    };
-    db.users.push(userObj);
-  }
-
-  // Get or initialize user state
-  const currentState = db.userStates[targetUsername] || {
-    cash: 1000000,
-    portfolio: [],
-    savings: 0,
-    loan: 0,
-    day: 1,
-    autoSellOrders: [],
-    highScore: 1000000,
-    goalCelebrated: false,
-    transactions: [],
-  };
-
-  const newCash = Math.max(0, (currentState.cash || 0) + deltaAmount);
-  currentState.cash = newCash;
-  currentState.highScore = Math.max(currentState.highScore || 0, newCash);
-
-  db.userStates[targetUsername] = currentState;
-  saveDB(db);
-
-  res.json({
-    success: true,
-    message: `@${userObj.name}(${targetUsername}) 계정에 ${deltaAmount.toLocaleString(
-      "ko-KR"
-    )}원이 적용되었습니다. (현재 잔액: ${newCash.toLocaleString("ko-KR")}원)`,
-    targetUsername,
-    targetName: userObj.name,
-    newCash,
-    deltaAmount,
-    users: db.users,
-  });
 });
 
 // 7. Admin Delete User
 app.post("/api/admin/delete-user", (req, res) => {
-  const { username } = req.body || {};
-  if (!username) {
-    return res.status(400).json({ success: false, message: "유저명이 필요합니다." });
+  try {
+    const { username } = req.body || {};
+    if (!username) {
+      return res.json({ success: false, message: "유저명이 필요합니다." });
+    }
+
+    const db = ensureDB();
+    const lowerName = username.toLowerCase();
+
+    db.users = db.users.filter((u) => u.username.toLowerCase() !== lowerName);
+    delete db.userStates[lowerName];
+    saveDB(db);
+
+    res.json({ success: true, users: db.users });
+  } catch (err: any) {
+    res.json({ success: false, message: err?.message || "유저 삭제 오류" });
   }
-
-  const db = ensureDB();
-  const lowerName = username.toLowerCase();
-
-  db.users = db.users.filter((u) => u.username.toLowerCase() !== lowerName);
-  delete db.userStates[lowerName];
-  saveDB(db);
-
-  res.json({ success: true, users: db.users });
 });
 
 // --- VITE MIDDLEWARE SETUP ---
