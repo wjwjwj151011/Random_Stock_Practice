@@ -1,4 +1,4 @@
-import { Sun, Moon, User as UserIcon, LogIn } from 'lucide-react';
+import { Sun, Moon, User as UserIcon, LogIn, ShieldAlert } from 'lucide-react';
 import { User } from '../types';
 
 interface HeaderProps {
@@ -15,6 +15,7 @@ interface HeaderProps {
   setActiveTab?: (tab: 'TRADING' | 'BANK') => void;
   currentUser: User | null;
   onOpenAuthModal: () => void;
+  onOpenAdminModal?: () => void;
 }
 
 export default function Header({
@@ -30,7 +31,8 @@ export default function Header({
   activeTab,
   setActiveTab,
   currentUser,
-  onOpenAuthModal
+  onOpenAuthModal,
+  onOpenAdminModal
 }: HeaderProps) {
   // Format currency
   const formatKRW = (value: number) => {
@@ -153,6 +155,19 @@ export default function Header({
           </div>
 
           <div className="flex items-center gap-2 border-l border-slate-100 dark:border-slate-800 pl-2" id="highscore-reset-row">
+            {/* Admin Button for @woojin */}
+            {currentUser?.username.toLowerCase() === 'woojin' && (
+              <button
+                onClick={onOpenAdminModal}
+                className="px-2.5 py-1 text-[10px] font-extrabold rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 shadow-xs flex items-center gap-1 transition-all cursor-pointer border border-amber-300 dark:border-amber-600 animate-pulse"
+                id="header-admin-btn"
+                title="우진 어드민 콘솔 열기"
+              >
+                <span>👑</span>
+                <span>어드민</span>
+              </button>
+            )}
+
             {/* User Login/Account Button */}
             <button
               onClick={onOpenAuthModal}

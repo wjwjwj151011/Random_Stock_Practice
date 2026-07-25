@@ -9,6 +9,7 @@ import PortfolioSummary from './components/PortfolioSummary';
 import NewsFeed from './components/NewsFeed';
 import BankPanel from './components/BankPanel';
 import AuthModal from './components/AuthModal';
+import AdminModal from './components/AdminModal';
 import { getCurrentUser, loadUserGameState, saveUserGameState, setCurrentUserSession } from './lib/auth';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 
@@ -21,6 +22,7 @@ export default function App() {
   // --- Auth State ---
   const [currentUser, setCurrentUser] = useState<User | null>(() => getCurrentUser());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState<boolean>(false);
 
   // Subscribe to Supabase Auth state changes if configured
   useEffect(() => {
@@ -656,6 +658,23 @@ export default function App() {
     setNews((prevNews) => prevNews.map((item) => ({ ...item, read: true })));
   };
 
+  // Trigger custom news from Admin Console
+  const handleTriggerAdminNews = (title: string, content: string, impact: 'POS' | 'NEG' | 'NEU') => {
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const newNews: NewsItem = {
+      id: Math.random().toString(36).substring(2, 9),
+      title,
+      content,
+      time: timeStr,
+      impactStockId: null,
+      impactPercent: impact === 'POS' ? 15 : impact === 'NEG' ? -15 : 0,
+      type: impact === 'POS' ? 'positive' : impact === 'NEG' ? 'negative' : 'neutral',
+      read: false
+    };
+    setNews((prev) => [newNews, ...prev]);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200" id="app-root">
       
@@ -674,6 +693,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         currentUser={currentUser}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        onOpenAdminModal={() => setIsAdminModalOpen(true)}
       />
 
       {/* Auth Modal (Sign Up & Login) */}
@@ -682,6 +702,19 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
         onUserChange={(user) => setCurrentUser(user)}
+      />
+
+      {/* Admin Console Modal (@woojin exclusive) */}
+      <AdminModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        currentUser={currentUser}
+        stocks={stocks}
+        setStocks={setStocks}
+        cash={cash}
+        setCash={setCash}
+        setLoan={setLoan}
+        onTriggerNews={handleTriggerAdminNews}
       />
 
       {/* Main Layout Area */}
