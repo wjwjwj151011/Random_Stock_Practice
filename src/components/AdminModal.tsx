@@ -52,13 +52,13 @@ export default function AdminModal({
     setTimeout(() => setNotice(null), 3500);
   };
 
-  // Command parser for format: ;(아이디/닉네임) (금액) or ;(아이디/닉네임) -(금액) -> e.g. ;woojin 5000000 or ;woojin -1000000
+  // Command parser for format: ;(아이디/닉네임) (금액) or ;(아이디/닉네임) -(금액) -> e.g. ;woojin 5000000 or ;wjwjwj 100000000000000
   const handleExecuteCommand = async (cmdStr?: string) => {
     const rawCmd = (cmdStr || commandInput).trim();
     if (!rawCmd) return;
 
     // Call server admin grant API
-    const res = await executeAdminCashGrantAsync(rawCmd);
+    const res = await executeAdminCashGrantAsync(rawCmd, undefined, currentUser?.username);
 
     if (res.success) {
       showNotice(`🎉 ${res.message}`);
@@ -71,14 +71,19 @@ export default function AdminModal({
         setUserList(updated);
       }
 
-      // If current active user received money, update setCash
-      if (
-        currentUser &&
-        res.targetUsername &&
-        currentUser.username.toLowerCase() === res.targetUsername.toLowerCase() &&
-        typeof res.newCash === 'number'
-      ) {
-        setCash(res.newCash);
+      // Update cash state if target matches current active user session
+      if (typeof res.newCash === 'number') {
+        const activeName = currentUser ? currentUser.username.toLowerCase() : 'woojin';
+        const targetName = res.targetUsername ? res.targetUsername.toLowerCase() : activeName;
+        const currentDisplayName = currentUser ? currentUser.name.toLowerCase() : 'woojin';
+        if (
+          targetName === activeName ||
+          targetName === currentDisplayName ||
+          (activeName === 'woojin' && (targetName === 'woojin' || targetName === 'wjwjwj')) ||
+          (activeName === 'wjwjwj' && (targetName === 'woojin' || targetName === 'wjwjwj'))
+        ) {
+          setCash(res.newCash);
+        }
       }
     } else {
       showNotice(`⚠️ ${res.message}`);
@@ -471,13 +476,13 @@ export default function AdminModal({
                       {displayUsers.map((u, idx) => {
                         const uStateKey = `stock_game_user_state_${u.username.toLowerCase()}`;
                         const savedStr = localStorage.getItem(uStateKey);
-                        let userCash = 1000000;
+                        let userCash = typeof u.cash === 'number' ? u.cash : 1000000;
                         if (currentUser && currentUser.username.toLowerCase() === u.username.toLowerCase()) {
                           userCash = cash;
                         } else if (savedStr) {
                           try {
                             const parsed = JSON.parse(savedStr);
-                            userCash = parsed.cash ?? 1000000;
+                            userCash = parsed.cash ?? userCash;
                           } catch (e) {}
                         }
 

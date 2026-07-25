@@ -97,29 +97,65 @@ function saveDB(db: DBStructure): void {
 }
 
 // Robust Helper to parse admin command string
-function parseAdminCmd(cmdStr: string) {
+function parseAdminCmd(cmdStr: string, defaultUser: string = "wjwjwj") {
   if (!cmdStr) return null;
-  const trimmed = cmdStr.trim().replace(/^;/, "").trim();
+
+  let trimmed = cmdStr.trim();
+  if (trimmed.startsWith(";")) {
+    trimmed = trimmed.substring(1).trim();
+  }
   if (!trimmed) return null;
 
-  // Match: optional @, target, optional sign (+ or -), number with optional commas
-  const match = trimmed.match(/^@?([^\s+,-]+)\s+([+-]?)\s*([0-9,]+)$/);
-  if (!match) return null;
+  let targetStr = defaultUser;
+  let amountStr = trimmed;
 
-  const targetStr = match[1].trim().toLowerCase().replace(/^@/, "");
-  const isNegative = match[2] === "-";
-  const numStr = match[3].replace(/,/g, "");
-  let rawNum = Number(numStr);
+  const parts = trimmed.split(/\s+/);
+  if (parts.length >= 2) {
+    targetStr = parts[0].replace(/^@/, "").toLowerCase();
+    amountStr = parts.slice(1).join(" ");
+  } else if (parts.length === 1) {
+    // Single term - check if it's a number/signed number/Korean unit number
+    const isNum = /^[+-]?[0-9,]+(\.[0-9]+)?(만|억|조)?$/.test(parts[0]);
+    if (!isNum) {
+      return null;
+    }
+  }
+
+  amountStr = amountStr.trim();
+  let isNegative = false;
+  if (amountStr.startsWith("-")) {
+    isNegative = true;
+    amountStr = amountStr.substring(1).trim();
+  } else if (amountStr.startsWith("+")) {
+    amountStr = amountStr.substring(1).trim();
+  }
+
+  let rawNum = 0;
+  if (amountStr.includes("조")) {
+    const [numPart] = amountStr.split("조");
+    const val = parseFloat(numPart.replace(/,/g, "")) || 1;
+    rawNum = val * 1e12;
+  } else if (amountStr.includes("억")) {
+    const [numPart] = amountStr.split("억");
+    const val = parseFloat(numPart.replace(/,/g, "")) || 1;
+    rawNum = val * 1e8;
+  } else if (amountStr.includes("만")) {
+    const [numPart] = amountStr.split("만");
+    const val = parseFloat(numPart.replace(/,/g, "")) || 1;
+    rawNum = val * 1e4;
+  } else {
+    rawNum = Number(amountStr.replace(/,/g, ""));
+  }
 
   if (isNaN(rawNum) || rawNum <= 0 || !isFinite(rawNum)) return null;
 
-  // Limit max grant amount per command to 1000 Trillion (1e15) to prevent floating overflow
-  if (rawNum > 1e15) {
-    rawNum = 1e15;
+  // Cap at Number.MAX_SAFE_INTEGER (9e15, ~9000 Trillion KRW)
+  if (rawNum > 9e15) {
+    rawNum = 9e15;
   }
 
   return {
-    targetStr,
+    targetStr: targetStr.toLowerCase(),
     deltaAmount: isNegative ? -rawNum : rawNum,
     absAmount: rawNum,
     isNegative,
@@ -274,7 +310,7 @@ app.post("/api/user-state/:username", (req, res) => {
 // 6. Admin Grant / Deduct cash command execution
 app.post("/api/admin/grant-cash", (req, res) => {
   try {
-    const { command, target, amount } = req.body || {};
+    const { command, target, amount, currentUser } = req.body || {};
     const db = ensureDB();
 
     let targetUsername = "";
@@ -283,7 +319,8 @@ app.post("/api/admin/grant-cash", (req, res) => {
     let isNegative = false;
 
     if (command) {
-      const parsedCmd = parseAdminCmd(command);
+      const defaultTarget = currentUser || "wjwjwj";
+      const parsedCmd = parseAdminCmd(command, defaultTarget);
       if (!parsedCmd) {
         return res.json({
           success: false,

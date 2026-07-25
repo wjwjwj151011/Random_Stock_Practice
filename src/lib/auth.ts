@@ -36,10 +36,13 @@ export async function fetchRegisteredUsersAsync(): Promise<User[]> {
   try {
     const res = await fetch('/api/users');
     if (res.ok) {
-      const data = await res.json();
-      if (data && Array.isArray(data.users)) {
-        saveRegisteredUsers(data.users);
-        return data.users;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data && Array.isArray(data.users)) {
+          saveRegisteredUsers(data.users);
+          return data.users;
+        }
       }
     }
   } catch (e) {
@@ -103,20 +106,25 @@ export async function registerUserAsync(
       }),
     });
 
-    const data = await res.json();
-    if (data && data.success && data.user) {
-      const newUser: User = data.user;
+    if (res.ok) {
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data && data.success && data.user) {
+          const newUser: User = data.user;
 
-      const users = getRegisteredUsers();
-      if (!users.some((u) => u.username.toLowerCase() === newUser.username.toLowerCase())) {
-        users.push(newUser);
-        saveRegisteredUsers(users);
+          const users = getRegisteredUsers();
+          if (!users.some((u) => u.username.toLowerCase() === newUser.username.toLowerCase())) {
+            users.push(newUser);
+            saveRegisteredUsers(users);
+          }
+
+          setCurrentUserSession(newUser);
+          return { success: true, message: '회원가입이 완료되었습니다!', user: newUser };
+        } else if (data && data.message) {
+          return { success: false, message: data.message };
+        }
       }
-
-      setCurrentUserSession(newUser);
-      return { success: true, message: '회원가입이 완료되었습니다!', user: newUser };
-    } else if (data && data.message) {
-      return { success: false, message: data.message };
     }
   } catch (err) {
     console.warn('Server registration failed, attempting fallback local registration', err);
@@ -165,16 +173,21 @@ export async function loginUserAsync(
       body: JSON.stringify({ emailOrUsername: cleanInput, passwordHash }),
     });
 
-    const data = await res.json();
-    if (data && data.success && data.user) {
-      const userObj: User = data.user;
-      setCurrentUserSession(userObj);
+    if (res.ok) {
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data && data.success && data.user) {
+          const userObj: User = data.user;
+          setCurrentUserSession(userObj);
 
-      fetchRegisteredUsersAsync().catch(() => {});
+          fetchRegisteredUsersAsync().catch(() => {});
 
-      return { success: true, message: '로그인되었습니다!', user: userObj };
-    } else if (data && data.message) {
-      return { success: false, message: data.message };
+          return { success: true, message: '로그인되었습니다!', user: userObj };
+        } else if (data && data.message) {
+          return { success: false, message: data.message };
+        }
+      }
     }
   } catch (e) {
     console.warn('Server login failed, trying local fallback', e);
@@ -248,10 +261,13 @@ export async function loadUserGameStateAsync(username: string): Promise<UserGame
   try {
     const res = await fetch(`/api/user-state/${encodeURIComponent(username)}`);
     if (res.ok) {
-      const data = await res.json();
-      if (data && data.success && data.state) {
-        saveUserGameState(username, data.state);
-        return data.state;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data && data.success && data.state) {
+          saveUserGameState(username, data.state);
+          return data.state;
+        }
       }
     }
   } catch (e) {
@@ -278,13 +294,14 @@ export function saveUserGameState(username: string, state: UserGameState): void 
 // Admin API helper to grant cash or execute command
 export async function executeAdminCashGrantAsync(
   commandOrTarget: string,
-  amount?: number
+  amount?: number,
+  activeUser?: string
 ): Promise<{ success: boolean; message: string; users?: User[]; targetUsername?: string; newCash?: number }> {
   // 1. Try server endpoint first
   try {
     const payload = typeof amount === 'number'
-      ? { target: commandOrTarget, amount }
-      : { command: commandOrTarget };
+      ? { target: commandOrTarget, amount, currentUser: activeUser }
+      : { command: commandOrTarget, currentUser: activeUser };
 
     const res = await fetch('/api/admin/grant-cash', {
       method: 'POST',
@@ -292,51 +309,90 @@ export async function executeAdminCashGrantAsync(
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
-    if (data && data.success) {
-      if (Array.isArray(data.users)) {
-        saveRegisteredUsers(data.users);
+    if (res.ok) {
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data && data.success) {
+          if (Array.isArray(data.users)) {
+            saveRegisteredUsers(data.users);
+          }
+          return {
+            success: true,
+            message: data.message,
+            users: data.users,
+            targetUsername: data.targetUsername,
+            newCash: data.newCash,
+          };
+        } else if (data && data.message) {
+          return { success: false, message: data.message };
+        }
       }
-      return {
-        success: true,
-        message: data.message,
-        users: data.users,
-        targetUsername: data.targetUsername,
-        newCash: data.newCash,
-      };
-    } else if (data && data.message) {
-      return { success: false, message: data.message };
     }
   } catch (e) {
     console.warn('Server admin grant failed, proceeding with client-side fallback', e);
   }
 
   // 2. Client-side fallback handler
-  let targetInput = '';
+  let targetInput = (activeUser || 'woojin').toLowerCase();
   let deltaAmount = 0;
 
   if (typeof amount === 'number') {
     targetInput = commandOrTarget.trim().toLowerCase().replace(/^@/, '');
     deltaAmount = amount;
   } else {
-    const trimmed = commandOrTarget.trim().replace(/^;/, '').trim();
-    const match = trimmed.match(/^@?([^\s+,-]+)\s+([+-]?)\s*([0-9,]+)$/);
-    if (!match) {
+    let trimmed = commandOrTarget.trim();
+    if (trimmed.startsWith(';')) {
+      trimmed = trimmed.substring(1).trim();
+    }
+    if (!trimmed) {
+      return { success: false, message: '명령어를 입력해 주세요.' };
+    }
+
+    let amountStr = trimmed;
+    const parts = trimmed.split(/\s+/);
+    if (parts.length >= 2) {
+      targetInput = parts[0].replace(/^@/, '').toLowerCase();
+      amountStr = parts.slice(1).join(' ');
+    } else if (parts.length === 1) {
+      targetInput = (activeUser || 'woojin').toLowerCase();
+      amountStr = parts[0];
+    }
+
+    amountStr = amountStr.trim();
+    let isNegative = false;
+    if (amountStr.startsWith('-')) {
+      isNegative = true;
+      amountStr = amountStr.substring(1).trim();
+    } else if (amountStr.startsWith('+')) {
+      amountStr = amountStr.substring(1).trim();
+    }
+
+    let rawNum = 0;
+    if (amountStr.includes('조')) {
+      const [numPart] = amountStr.split('조');
+      const val = parseFloat(numPart.replace(/,/g, '')) || 1;
+      rawNum = val * 1e12;
+    } else if (amountStr.includes('억')) {
+      const [numPart] = amountStr.split('억');
+      const val = parseFloat(numPart.replace(/,/g, '')) || 1;
+      rawNum = val * 1e8;
+    } else if (amountStr.includes('만')) {
+      const [numPart] = amountStr.split('만');
+      const val = parseFloat(numPart.replace(/,/g, '')) || 1;
+      rawNum = val * 1e4;
+    } else {
+      rawNum = Number(amountStr.replace(/,/g, ''));
+    }
+
+    if (isNaN(rawNum) || rawNum <= 0 || !isFinite(rawNum)) {
       return {
         success: false,
         message: '명령어 형식이 올바르지 않습니다. 예: ;wjwjwj 100000000000000 또는 ;woojin 5000000',
       };
     }
-    targetInput = match[1].trim().toLowerCase().replace(/^@/, '');
-    const isNegative = match[2] === '-';
-    const numStr = match[3].replace(/,/g, '');
-    let rawNum = Number(numStr);
-
-    if (isNaN(rawNum) || rawNum <= 0 || !isFinite(rawNum)) {
-      return { success: false, message: '올바른 금액 숫자를 입력해 주세요.' };
-    }
-    if (rawNum > 1e15) {
-      rawNum = 1e15;
+    if (rawNum > 9e15) {
+      rawNum = 9e15;
     }
     deltaAmount = isNegative ? -rawNum : rawNum;
   }

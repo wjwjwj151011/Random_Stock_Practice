@@ -1,0 +1,49 @@
+{
+  "users": [
+    {
+      "username": "woojin",
+      "email": "woojin@stockgame.app",
+      "name": "우진(어드민)",
+      "passwordHash": "hash_admin_woojin",
+      "createdAt": "2026-07-25T07:37:37.255Z",
+      "provider": "local"
+    },
+    {
+      "username": "wjwjwj",
+      "name": "wjwjwj",
+      "passwordHash": "auto_created",
+      "createdAt": "2026-07-25T07:46:43.464Z",
+      "provider": "local"
+    }
+  ],
+  "userStates": {
+    "woojin": {
+      "cash": 10000000,
+      "portfolio": [],
+      "savings": 0,
+      "loan": 0,
+      "day": 1,
+      "autoSellOrders": [],
+      "highScore": 10000000,
+      "goalCelebrated": false,
+      "transactions": []
+    },
+    "wjwjwj": {
+      "cash": 0,
+      "portfolio": [],
+      "savings": 544132685932,
+      "loan": 0,
+      "day": 2412,
+      "autoSellOrders": [],
+      "highScore": 544132685932,
+      "goalCelebrated": true,
+      "transactions": [],
+      "stats": {
+        "totalTrades": 0,
+        "winningTrades": 0,
+        "highestPortfolioValue": 544132685932,
+        "biggestGainPercent": 0
+      }
+    }
+  }
+}
