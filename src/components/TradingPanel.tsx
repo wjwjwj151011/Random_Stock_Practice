@@ -199,42 +199,45 @@ export default function TradingPanel({
   );
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col h-full justify-between animate-fade-in transition-all duration-200" id="trading-panel-card">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl p-3.5 border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col h-full justify-between overflow-y-auto max-h-[540px] lg:max-h-none animate-fade-in transition-all duration-200" id="trading-panel-card">
       <div id="trading-tabs-header">
         {/* Buy/Sell/Auto-Sell Tabs */}
-        <div className="grid grid-cols-3 gap-1 bg-slate-100/60 dark:bg-slate-950/60 p-0.5 rounded-lg mb-2.5" id="trading-tabs">
+        <div className="grid grid-cols-3 gap-1 bg-slate-100/80 dark:bg-slate-950/80 p-1 rounded-xl mb-2.5" id="trading-tabs">
           <button
             onClick={() => setTab('BUY')}
-            className={`py-1 text-[10px] font-bold rounded-md transition-all duration-200 cursor-pointer ${
+            className={`py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 ${
               tab === 'BUY'
-                ? 'bg-rose-600 text-white shadow-xs'
+                ? 'bg-rose-600 text-white shadow-md'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
             id="tab-buy"
           >
-            🔴 매수
+            <span>🔴</span>
+            <span>매수</span>
           </button>
           <button
             onClick={() => setTab('SELL')}
-            className={`py-1 text-[10px] font-bold rounded-md transition-all duration-200 cursor-pointer ${
+            className={`py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 ${
               tab === 'SELL'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-md'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
             id="tab-sell"
           >
-            🔵 매도
+            <span>🔵</span>
+            <span>매도</span>
           </button>
           <button
             onClick={() => setTab('AUTO_SELL')}
-            className={`py-1 text-[10px] font-bold rounded-md transition-all duration-200 cursor-pointer ${
+            className={`py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 ${
               tab === 'AUTO_SELL'
-                ? 'bg-slate-700 dark:bg-slate-650 text-white shadow-xs'
+                ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-md'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
             id="tab-autosell"
           >
-            ⚙️ 자동매도
+            <span>⚙️</span>
+            <span>자동매도</span>
           </button>
         </div>
 
@@ -622,16 +625,17 @@ export default function TradingPanel({
           <button
             onClick={handleSubmit}
             disabled={isInvalid}
-            className={`w-full py-1 rounded-md font-bold text-[10px] tracking-wide text-white transition-all duration-200 shadow-xs flex items-center justify-center gap-1 cursor-pointer ${
+            className={`w-full py-2.5 px-4 rounded-xl font-black text-xs tracking-wide text-white transition-all duration-200 shadow-md flex items-center justify-center gap-1.5 cursor-pointer ${
               isInvalid
                 ? 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed text-slate-500 dark:text-slate-650 shadow-none'
                 : tab === 'BUY'
-                  ? 'bg-rose-600 hover:bg-rose-700 active:scale-[0.99] focus:ring-4 focus:ring-rose-100 dark:focus:ring-rose-950/50'
-                  : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-950/50'
+                  ? 'bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 active:scale-[0.98] ring-2 ring-rose-500/20 shadow-rose-600/20'
+                  : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:scale-[0.98] ring-2 ring-blue-500/20 shadow-blue-600/20'
             }`}
             id="trade-submit-button"
           >
-            {tab === 'BUY' ? '🔴' : '🔵'} {buttonText()}
+            <span className="text-sm">{tab === 'BUY' ? '🔴' : '🔵'}</span>
+            <span>{buttonText()}</span>
           </button>
         </div>
       )}

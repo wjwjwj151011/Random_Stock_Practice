@@ -2,17 +2,17 @@ import { Stock, NewsItem } from '../types';
 
 export const INITIAL_STOCKS: Stock[] = [
   {
-    id: 'titan-tech',
-    name: '타이탄 테크',
-    ticker: 'TITE',
-    price: 150000,
-    prevPrice: 150000,
-    history: Array.from({ length: 20 }, (_, i) => 140000 + Math.sin(i / 2) * 5000 + i * 500),
+    id: 'nexus-ai',
+    name: '넥서스 AI',
+    ticker: 'NXAI',
+    price: 165000,
+    prevPrice: 165000,
+    history: Array.from({ length: 20 }, (_, i) => 150000 + Math.sin(i / 2) * 5000 + i * 800),
     volatility: 0.015, // 1.5% max random change per tick
-    drift: 0.001, // Slightly positive long term drift
+    drift: 0.0012, // Slightly positive long term drift
     minPrice: 5000,
     maxPrice: 2000000,
-    description: '클라우드 연산과 AI 반도체 선두 주자이자 안전한 기술 대형주입니다.',
+    description: '생성형 AI 신경망 칩셋 및 휴머노이드 자율 제어 OS를 독점 개발하는 차세대 테크 대장주입니다.',
     category: 'Tech'
   },
   {
@@ -65,8 +65,8 @@ export const INITIAL_STOCKS: Stock[] = [
     prevPrice: 500,
     history: Array.from({ length: 20 }, (_, i) => 400 + Math.random() * 200),
     volatility: 0.15, // 15% volatility (extreme gamble)
-    drift: -0.001, // Gradual drift with high volatility and sudden pumps
-    minPrice: 30,
+    drift: 0.002, // Positive meme drift so it grows over time
+    minPrice: 100, // Never fall below 100 KRW
     maxPrice: 100000,
     description: '인터넷 밈에서 탄생한 가상자산입니다. 종잡을 수 없는 급등락과 뜬금없는 떡상을 보입니다.',
     category: 'Crypto'
@@ -151,28 +151,28 @@ export interface NewsTemplate {
 }
 
 export const NEWS_TEMPLATES_BY_STOCK: Record<string, NewsTemplate[]> = {
-  'titan-tech': [
+  'nexus-ai': [
     {
-      title: '타이탄 테크, 차세대 AI 가속기 가속 기능 공식 출시',
-      content: '기존 칩셋 성능 대비 4배 향상된 칩셋을 독점 발표하며 글로벌 빅테크 주문이 폭주하고 있습니다.',
-      impactPercentRange: [8, 15],
+      title: '넥서스 AI, 차세대 초거대 AI 전용 NPU 칩셋 전격 발표',
+      content: '기존 연산 반도체 대비 전력 효율이 5배 이상 개선된 차세대 NPU를 독점 발표하며 글로벌 빅테크 주문이 폭주하고 있습니다.',
+      impactPercentRange: [8, 16],
       type: 'positive'
     },
     {
-      title: '미국 빅테크 연합, 타이탄 반도체 대량 수주 계약 체결',
-      content: '글로벌 유수 데이터센터들이 타이탄 테크와의 5개년 파트너십을 체결했습니다.',
-      impactPercentRange: [5, 12],
+      title: '글로벌 로봇 연합, 넥서스 AI 자율 제어 OS 표준 채택',
+      content: '세계적 로봇 생산 기업들이 넥서스 AI의 온디바이스 AI OS 파트너십을 일제히 체결했습니다.',
+      impactPercentRange: [6, 14],
       type: 'positive'
     },
     {
-      title: '타이탄 테크, 미세 공정 수율 저하 논란',
-      content: '대만 파운드리 위탁 공정에서 일부 수율 오류가 감지되어 출하 시점이 1분기 지연될 수 있다는 루머가 돕니다.',
+      title: '넥서스 AI, 미세 공정 공급망 부품 수율 우려 제기',
+      content: '파운드리 공정 라인에서 부분 수율 오차가 감지되어 주요 신제품 출하가 단기 지연될 수 있다는 소문이 돕니다.',
       impactPercentRange: [-10, -5],
       type: 'negative'
     },
     {
-      title: '정부, 국산 AI 반도체 독과점 여부 조사 착수',
-      content: '공정거래위원회가 타이탄 테크의 클라우드 인프라 시장 지배력 남용 여부를 전면 조사 중입니다.',
+      title: '독점 규제 당국, 넥서스 AI 시장 지배력 남용 조사 착수',
+      content: '공정거래위원회가 넥서스 AI의 AI 클라우드 칩셋 독점 공급 관행에 대해 전면 조사에 나섰습니다.',
       impactPercentRange: [-7, -3],
       type: 'negative'
     }
@@ -506,10 +506,14 @@ export function calculateNextPrice(stock: Stock, marketSentiment: number = 0): n
 
   // Dog coin (meme coin) special volatility boost / bottom bounce
   if (stock.id === 'dog-coin') {
-    // If dog coin is low (under 100 KRW), give a 20% chance of a sudden meme pump!
-    if (stock.price <= 100 && Math.random() < 0.20) {
-      const pumpMultiplier = 1.3 + Math.random() * 1.5; // +30% ~ +180% surge
+    // If dog coin is low (under 300 KRW), give a 35% chance of a sudden meme pump!
+    if (stock.price <= 300 && Math.random() < 0.35) {
+      const pumpMultiplier = 1.5 + Math.random() * 2.0; // +50% ~ +250% surge
       nextPrice = Math.round(stock.price * pumpMultiplier);
+    }
+    // Hard safeguard: if Dog Coin ever drops below 100 KRW, immediately bounce back to 300~500 KRW!
+    if (nextPrice < 100) {
+      nextPrice = Math.round(300 + Math.random() * 200);
     }
   }
 

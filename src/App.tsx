@@ -75,12 +75,19 @@ export default function App() {
       }
     }
 
-    // Sanitize prices to conform to minPrice/maxPrice updated bounds
+    // Sanitize prices & migrate legacy titan-tech to nexus-ai
     return loadedStocks.map((stock) => {
+      if (stock.id === 'titan-tech') {
+        const nexus = INITIAL_STOCKS.find((s) => s.id === 'nexus-ai') || INITIAL_STOCKS[0];
+        return { ...nexus };
+      }
       const initialRef = INITIAL_STOCKS.find((s) => s.id === stock.id);
-      const minP = initialRef?.minPrice ?? stock.minPrice ?? 30;
+      const minP = stock.id === 'dog-coin' ? 100 : (initialRef?.minPrice ?? stock.minPrice ?? 30);
       const maxP = initialRef?.maxPrice ?? stock.maxPrice ?? 100000;
-      const sanitizedPrice = Math.max(minP, Math.min(maxP, stock.price));
+      let sanitizedPrice = Math.max(minP, Math.min(maxP, stock.price));
+      if (stock.id === 'dog-coin' && sanitizedPrice < 100) {
+        sanitizedPrice = 500;
+      }
       return {
         ...stock,
         minPrice: minP,
@@ -91,7 +98,7 @@ export default function App() {
     });
   });
 
-  const [selectedStockId, setSelectedStockId] = useState<string>('titan-tech');
+  const [selectedStockId, setSelectedStockId] = useState<string>('nexus-ai');
 
   const [cash, setCash] = useState<number>(() => {
     const saved = localStorage.getItem('stock_game_cash');
@@ -100,7 +107,13 @@ export default function App() {
 
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>(() => {
     const saved = localStorage.getItem('stock_game_portfolio');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved) as PortfolioItem[];
+      return parsed.map((item) => (item.stockId === 'titan-tech' ? { ...item, stockId: 'nexus-ai' } : item));
+    } catch (e) {
+      return [];
+    }
   });
 
   const [news, setNews] = useState<NewsItem[]>(() => {
@@ -748,8 +761,8 @@ export default function App() {
             </div>
 
             {/* Right Column: Assets Portfolio & Buying Console */}
-            <div className="lg:col-span-4 flex flex-col gap-4 lg:h-[540px]" id="column-trading">
-              <div className="h-[300px]">
+            <div className="lg:col-span-4 flex flex-col gap-3 lg:h-[540px]" id="column-trading">
+              <div className="flex-1 min-h-[330px] overflow-visible">
                 <TradingPanel
                   stock={currentStock}
                   cash={cash}
@@ -760,7 +773,7 @@ export default function App() {
                   onCancelAutoSellOrder={handleCancelAutoSellOrder}
                 />
               </div>
-              <div className="h-[224px]">
+              <div className="h-[200px] shrink-0">
                 <PortfolioSummary
                   stocks={stocks}
                   portfolio={portfolio}

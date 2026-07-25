@@ -26,6 +26,7 @@ export default function AdminModal({
   setLoan,
   onTriggerNews
 }: AdminModalProps) {
+  const [commandInput, setCommandInput] = useState<string>('');
   const [customCash, setCustomCash] = useState<string>('');
   const [selectedStockId, setSelectedStockId] = useState<string>(stocks[0]?.id || 'dog-coin');
   const [multiplierInput, setMultiplierInput] = useState<string>('2');
@@ -38,7 +39,53 @@ export default function AdminModal({
 
   const showNotice = (msg: string) => {
     setNotice(msg);
-    setTimeout(() => setNotice(null), 2500);
+    setTimeout(() => setNotice(null), 3000);
+  };
+
+  // Command parser for format: ;(아이디) (금액) -> e.g. ;woojin 5000000
+  const handleExecuteCommand = (cmdStr?: string) => {
+    const rawCmd = (cmdStr || commandInput).trim();
+    if (!rawCmd) return;
+
+    // Match ;username amount or username amount
+    const match = rawCmd.match(/^;?\s*([^\s]+)\s+([0-9]+)$/);
+    if (!match) {
+      showNotice('⚠️ 올바른 명령어 형식이 아닙니다. 예시: ;woojin 5000000');
+      return;
+    }
+
+    const targetUsername = match[1].toLowerCase().replace('@', '');
+    const amount = parseInt(match[2], 10);
+
+    if (isNaN(amount) || amount <= 0) {
+      showNotice('⚠️ 지급할 금액은 0보다 큰 숫자여야 합니다.');
+      return;
+    }
+
+    // 1. If targeting current active user, update live cash state
+    if (currentUser && currentUser.username.toLowerCase() === targetUsername) {
+      setCash((prev) => prev + amount);
+    }
+
+    // 2. Update persistent user state in localStorage
+    const userStateKey = `stock_game_user_state_${targetUsername}`;
+    const savedStateStr = localStorage.getItem(userStateKey);
+    if (savedStateStr) {
+      try {
+        const parsed = JSON.parse(savedStateStr);
+        parsed.cash = (parsed.cash || 0) + amount;
+        localStorage.setItem(userStateKey, JSON.stringify(parsed));
+      } catch (e) {
+        console.error('Failed to parse user state', e);
+      }
+    } else if (currentUser && currentUser.username.toLowerCase() === targetUsername) {
+      // Create initial state for user if missing
+      const newState = { cash: cash + amount, portfolio: [], savings: 0, loan: 0, day: 1 };
+      localStorage.setItem(userStateKey, JSON.stringify(newState));
+    }
+
+    showNotice(`🎉 @${targetUsername} 계정에 ${amount.toLocaleString('ko-KR')}원이 성공적으로 지급되었습니다!`);
+    setCommandInput('');
   };
 
   // Add cash handler
@@ -207,6 +254,60 @@ export default function AdminModal({
           </div>
         ) : (
           <div className="space-y-5 text-xs">
+            {/* Command Terminal Box: ;(아이디) (금액) */}
+            <div className="bg-slate-900 text-slate-100 p-4 rounded-xl border border-amber-500/50 shadow-inner space-y-2">
+              <div className="flex items-center justify-between text-amber-400 font-mono font-bold">
+                <span className="flex items-center gap-1.5">
+                  <span className="animate-pulse">⚡</span> 어드민 명령어 콘솔
+                </span>
+                <span className="text-[10px] text-slate-400">형식: ;(아이디) (금액)</span>
+              </div>
+              <p className="text-[11px] text-slate-300">
+                명령어를 입력하면 해당 계정에 즉시 지정한 금액이 지급됩니다.
+              </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleExecuteCommand();
+                }}
+                className="flex gap-2 pt-1"
+              >
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-2 font-mono font-bold text-amber-400 text-xs">&gt;</span>
+                  <input
+                    type="text"
+                    value={commandInput}
+                    onChange={(e) => setCommandInput(e.target.value)}
+                    placeholder=";woojin 5000000"
+                    className="w-full pl-7 pr-3 py-1.5 text-xs font-mono font-bold bg-slate-950 border border-slate-700 text-amber-300 rounded-lg focus:outline-none focus:border-amber-400 placeholder:text-slate-600"
+                    id="admin-cmd-input"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-lg transition-colors cursor-pointer text-xs"
+                >
+                  실행
+                </button>
+              </form>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleExecuteCommand(';woojin 5000000')}
+                  className="px-2 py-0.5 text-[10px] font-mono bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-slate-700 cursor-pointer"
+                >
+                  ;woojin 5000000 (우진 500만)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExecuteCommand(';woojin 100000000')}
+                  className="px-2 py-0.5 text-[10px] font-mono bg-slate-800 hover:bg-slate-700 text-amber-300 rounded border border-slate-700 cursor-pointer"
+                >
+                  ;woojin 100000000 (우진 1억)
+                </button>
+              </div>
+            </div>
+
             {/* Section 1: Financial Magic */}
             <div className="bg-slate-50 dark:bg-slate-950/70 p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3">
               <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200 text-xs">
