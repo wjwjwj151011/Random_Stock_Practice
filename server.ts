@@ -18,6 +18,7 @@ interface UserData {
   passwordHash: string;
   createdAt: string;
   provider: string;
+  cash?: number;
 }
 
 interface DBStructure {
@@ -95,18 +96,27 @@ function saveDB(db: DBStructure): void {
   }
 }
 
-// Helper to parse admin command string
+// Robust Helper to parse admin command string
 function parseAdminCmd(cmdStr: string) {
-  const trimmed = cmdStr.trim();
-  // Match optional semicolon/at, target username or nickname, optional sign (+ or -), numbers with optional commas
-  const match = trimmed.match(/^;?\s*@?([^\s]+)\s+([+-]?)\s*([0-9,]+)$/);
+  if (!cmdStr) return null;
+  const trimmed = cmdStr.trim().replace(/^;/, "").trim();
+  if (!trimmed) return null;
+
+  // Match: optional @, target, optional sign (+ or -), number with optional commas
+  const match = trimmed.match(/^@?([^\s+,-]+)\s+([+-]?)\s*([0-9,]+)$/);
   if (!match) return null;
 
-  const targetStr = match[1].trim().toLowerCase().replace(/^@/, '');
-  const isNegative = match[2] === '-';
-  const rawNum = parseInt(match[3].replace(/,/g, ''), 10);
+  const targetStr = match[1].trim().toLowerCase().replace(/^@/, "");
+  const isNegative = match[2] === "-";
+  const numStr = match[3].replace(/,/g, "");
+  let rawNum = Number(numStr);
 
-  if (isNaN(rawNum) || rawNum <= 0) return null;
+  if (isNaN(rawNum) || rawNum <= 0 || !isFinite(rawNum)) return null;
+
+  // Limit max grant amount per command to 1000 Trillion (1e15) to prevent floating overflow
+  if (rawNum > 1e15) {
+    rawNum = 1e15;
+  }
 
   return {
     targetStr,
@@ -116,13 +126,23 @@ function parseAdminCmd(cmdStr: string) {
   };
 }
 
+function getUsersWithCash(db: DBStructure): UserData[] {
+  return db.users.map((u) => {
+    const state = db.userStates[u.username.toLowerCase()];
+    return {
+      ...u,
+      cash: state && typeof state.cash === "number" ? state.cash : 1000000,
+    };
+  });
+}
+
 // --- API ROUTES ---
 
-// 1. Get all registered users
+// 1. Get all registered users with their current cash balance
 app.get("/api/users", (req, res) => {
   try {
     const db = ensureDB();
-    res.json({ success: true, users: db.users });
+    res.json({ success: true, users: getUsersWithCash(db) });
   } catch (err: any) {
     res.json({ success: false, users: [], message: err?.message || "서버 오류" });
   }
@@ -231,6 +251,18 @@ app.post("/api/user-state/:username", (req, res) => {
 
     const db = ensureDB();
     db.userStates[username] = state;
+
+    // Ensure user exists in users list
+    if (!db.users.some((u) => u.username.toLowerCase() === username)) {
+      db.users.push({
+        username,
+        name: username,
+        passwordHash: "auto_created",
+        createdAt: new Date().toISOString(),
+        provider: "local",
+      });
+    }
+
     saveDB(db);
 
     res.json({ success: true });
@@ -258,20 +290,26 @@ app.post("/api/admin/grant-cash", (req, res) => {
           message: "명령어 형식이 올바르지 않습니다. 예: ;wjwjwj 100000000000000 또는 ;woojin 5000000",
         });
       }
-      
+
       const inputTarget = parsedCmd.targetStr;
       deltaAmount = parsedCmd.deltaAmount;
       absAmount = parsedCmd.absAmount;
       isNegative = parsedCmd.isNegative;
 
       let foundUser = db.users.find(
-        (u) => u.username.toLowerCase() === inputTarget || u.name.toLowerCase() === inputTarget
+        (u) =>
+          u.username.toLowerCase() === inputTarget ||
+          u.name.toLowerCase() === inputTarget ||
+          u.name.toLowerCase().includes(inputTarget)
       );
       targetUsername = foundUser ? foundUser.username.toLowerCase() : inputTarget;
     } else if (target && typeof amount === "number") {
       const inputTarget = target.toLowerCase().replace(/^@/, "");
       let foundUser = db.users.find(
-        (u) => u.username.toLowerCase() === inputTarget || u.name.toLowerCase() === inputTarget
+        (u) =>
+          u.username.toLowerCase() === inputTarget ||
+          u.name.toLowerCase() === inputTarget ||
+          u.name.toLowerCase().includes(inputTarget)
       );
       targetUsername = foundUser ? foundUser.username.toLowerCase() : inputTarget;
       deltaAmount = amount;
@@ -323,7 +361,7 @@ app.post("/api/admin/grant-cash", (req, res) => {
       targetName: userObj.name,
       newCash,
       deltaAmount,
-      users: db.users,
+      users: getUsersWithCash(db),
     });
   } catch (err: any) {
     res.json({ success: false, message: err?.message || "명령어 처리 중 오류 발생" });
@@ -345,7 +383,7 @@ app.post("/api/admin/delete-user", (req, res) => {
     delete db.userStates[lowerName];
     saveDB(db);
 
-    res.json({ success: true, users: db.users });
+    res.json({ success: true, users: getUsersWithCash(db) });
   } catch (err: any) {
     res.json({ success: false, message: err?.message || "유저 삭제 오류" });
   }

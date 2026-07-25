@@ -319,8 +319,8 @@ export async function executeAdminCashGrantAsync(
     targetInput = commandOrTarget.trim().toLowerCase().replace(/^@/, '');
     deltaAmount = amount;
   } else {
-    const trimmed = commandOrTarget.trim();
-    const match = trimmed.match(/^;?\s*@?([^\s]+)\s+([+-]?)\s*([0-9,]+)$/);
+    const trimmed = commandOrTarget.trim().replace(/^;/, '').trim();
+    const match = trimmed.match(/^@?([^\s+,-]+)\s+([+-]?)\s*([0-9,]+)$/);
     if (!match) {
       return {
         success: false,
@@ -329,9 +329,14 @@ export async function executeAdminCashGrantAsync(
     }
     targetInput = match[1].trim().toLowerCase().replace(/^@/, '');
     const isNegative = match[2] === '-';
-    const rawNum = parseInt(match[3].replace(/,/g, ''), 10);
-    if (isNaN(rawNum) || rawNum <= 0) {
+    const numStr = match[3].replace(/,/g, '');
+    let rawNum = Number(numStr);
+
+    if (isNaN(rawNum) || rawNum <= 0 || !isFinite(rawNum)) {
       return { success: false, message: '올바른 금액 숫자를 입력해 주세요.' };
+    }
+    if (rawNum > 1e15) {
+      rawNum = 1e15;
     }
     deltaAmount = isNegative ? -rawNum : rawNum;
   }
