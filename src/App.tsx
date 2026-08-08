@@ -8,8 +8,6 @@ import TradingPanel from './components/TradingPanel';
 import PortfolioSummary from './components/PortfolioSummary';
 import NewsFeed from './components/NewsFeed';
 import BankPanel from './components/BankPanel';
-import AuthModal from './components/AuthModal';
-import AdminModal from './components/AdminModal';
 import { getCurrentUser, loadUserGameState, loadUserGameStateAsync, saveUserGameState, setCurrentUserSession, fetchRegisteredUsersAsync } from './lib/auth';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 
@@ -725,30 +723,6 @@ export default function App() {
         onToggleDarkMode={() => setDarkMode(!darkMode)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        currentUser={currentUser}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onOpenAdminModal={() => setIsAdminModalOpen(true)}
-      />
-
-      {/* Auth Modal (Sign Up & Login) */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        currentUser={currentUser}
-        onUserChange={(user) => setCurrentUser(user)}
-      />
-
-      {/* Admin Console Modal (@woojin exclusive) */}
-      <AdminModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
-        currentUser={currentUser}
-        stocks={stocks}
-        setStocks={setStocks}
-        cash={cash}
-        setCash={setCash}
-        setLoan={setLoan}
-        onTriggerNews={handleTriggerAdminNews}
       />
 
       {/* Main Layout Area */}

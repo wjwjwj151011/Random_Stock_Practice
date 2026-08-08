@@ -1,5 +1,4 @@
-import { Sun, Moon, User as UserIcon, LogIn, ShieldAlert } from 'lucide-react';
-import { User } from '../types';
+import { Sun, Moon } from 'lucide-react';
 
 interface HeaderProps {
   day: number;
@@ -13,9 +12,6 @@ interface HeaderProps {
   onToggleDarkMode: () => void;
   activeTab?: 'TRADING' | 'BANK';
   setActiveTab?: (tab: 'TRADING' | 'BANK') => void;
-  currentUser: User | null;
-  onOpenAuthModal: () => void;
-  onOpenAdminModal?: () => void;
 }
 
 export default function Header({
@@ -30,9 +26,6 @@ export default function Header({
   onToggleDarkMode,
   activeTab,
   setActiveTab,
-  currentUser,
-  onOpenAuthModal,
-  onOpenAdminModal
 }: HeaderProps) {
   // Format currency
   const formatKRW = (value: number) => {
@@ -155,43 +148,6 @@ export default function Header({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 border-l border-slate-100 dark:border-slate-800 pl-1.5 sm:pl-2 shrink-0" id="highscore-reset-row">
-            {/* Admin Button for @woojin */}
-            {currentUser?.username.toLowerCase() === 'woojin' && (
-              <button
-                onClick={onOpenAdminModal}
-                className="px-2 py-1 text-[10px] font-extrabold rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 shadow-xs flex items-center gap-1 transition-all cursor-pointer border border-amber-300 dark:border-amber-600 animate-pulse whitespace-nowrap"
-                id="header-admin-btn"
-                title="우진 어드민 콘솔 열기"
-              >
-                <span>👑</span>
-                <span>어드민</span>
-              </button>
-            )}
-
-            {/* User Login/Account Button */}
-            <button
-              onClick={onOpenAuthModal}
-              className={`px-2 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap ${
-                currentUser
-                  ? 'bg-emerald-50 dark:bg-emerald-955/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-100'
-                  : 'bg-slate-900 dark:bg-slate-800 text-white dark:text-slate-100 hover:bg-slate-800 dark:hover:bg-slate-700 dark:border dark:border-slate-700'
-              }`}
-              id="header-auth-btn"
-              title={currentUser ? `${currentUser.name} 계정 관리` : '로그인 및 회원가입'}
-            >
-              {currentUser ? (
-                <>
-                  <UserIcon size={12} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span className="max-w-[70px] truncate">{currentUser.name}</span>
-                </>
-              ) : (
-                <>
-                  <LogIn size={12} className="shrink-0" />
-                  <span className="whitespace-nowrap">로그인 / 회원가입</span>
-                </>
-              )}
-            </button>
-
             {/* Highscore display */}
             <div className="hidden sm:block text-right whitespace-nowrap" id="highscore-block">
               <span className="text-[8px] text-slate-400 dark:text-slate-500 font-semibold block leading-none mb-0.5">최고 자산</span>
